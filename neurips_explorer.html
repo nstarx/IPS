@@ -1,0 +1,3977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NeurIPS 2025 Explorer - Deep Dive & Simulators</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive exploration of NeurIPS 2025 Best Paper topics with comprehensive explanations and hands-on simulators" />
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN SYSTEM - Extending 2025_winners.html theme
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Colors */
+      --bg: #050816;
+      --bg-elevated: #070c1f;
+      --bg-surface: #0b1229;
+      --bg-surface-hover: #0f172a;
+      --card: #0b1229;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.12);
+      --accent-glow: rgba(79, 70, 229, 0.4);
+      --accent-2: #06b6d4;
+      --accent-2-soft: rgba(6, 182, 212, 0.12);
+      --accent-3: #22c55e;
+      --accent-4: #eab308;
+      --accent-5: #ec4899;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --badge-bg: rgba(148, 163, 184, 0.12);
+      --border-subtle: rgba(148, 163, 184, 0.25);
+      --border-medium: rgba(148, 163, 184, 0.4);
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      /* Radii */
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --radius-full: 999px;
+
+      /* Shadows */
+      --shadow-soft: 0 20px 40px rgba(15, 23, 42, 0.65);
+      --shadow-glow: 0 0 30px rgba(79, 70, 229, 0.2);
+
+      /* Transitions */
+      --transition-fast: 150ms ease;
+      --transition-normal: 250ms ease;
+      --transition-slow: 400ms ease;
+
+      /* Typography */
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background: var(--bg);
+      background-image: radial-gradient(circle at top, #0f172a 0%, #020617 50%, #000 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════════════════════════════ */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(5, 8, 22, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: var(--space-sm) var(--space-lg);
+    }
+
+    .nav-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .nav-brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .nav-link {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+      background: var(--bg-surface);
+    }
+
+    .nav-link.active {
+      color: var(--text-main);
+      background: var(--accent-soft);
+    }
+
+    /* Dropdown */
+    .nav-dropdown {
+      position: relative;
+    }
+
+    .nav-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .nav-dropdown-trigger::after {
+      content: "";
+      border: 4px solid transparent;
+      border-top-color: currentColor;
+      margin-top: 2px;
+      transition: transform var(--transition-fast);
+    }
+
+    .nav-dropdown:hover .nav-dropdown-trigger::after {
+      transform: rotate(180deg);
+    }
+
+    .nav-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 280px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm);
+      box-shadow: var(--shadow-soft);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition: all var(--transition-fast);
+    }
+
+    .nav-dropdown:hover .nav-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(4px);
+    }
+
+    .nav-dropdown-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: background var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .nav-dropdown-item:hover {
+      background: var(--bg-surface-hover);
+    }
+
+    .nav-dropdown-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .nav-dropdown-icon.llm { background: rgba(79, 70, 229, 0.2); }
+    .nav-dropdown-icon.rl { background: rgba(34, 197, 94, 0.2); }
+    .nav-dropdown-icon.diffusion { background: rgba(6, 182, 212, 0.2); }
+    .nav-dropdown-icon.theory { background: rgba(234, 179, 8, 0.2); }
+    .nav-dropdown-icon.bench { background: rgba(236, 72, 153, 0.2); }
+
+    .nav-dropdown-text {
+      flex: 1;
+    }
+
+    .nav-dropdown-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .nav-dropdown-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Mobile menu */
+    .nav-mobile-toggle {
+      display: none;
+      padding: var(--space-sm);
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .nav-mobile-toggle {
+        display: block;
+      }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-surface);
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .nav-dropdown-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        padding-left: var(--space-md);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+       ═══════════════════════════════════════════════════════════════ */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl) var(--space-lg);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PAGE CONTAINER & TRANSITIONS
+       ═══════════════════════════════════════════════════════════════ */
+    .page {
+      display: none;
+      animation: pageIn var(--transition-normal) ease-out;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PAGE HEADER
+       ═══════════════════════════════════════════════════════════════ */
+    .page-header {
+      margin-bottom: var(--space-xl);
+    }
+
+    .page-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: var(--space-md);
+    }
+
+    .page-breadcrumb a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .page-breadcrumb a:hover {
+      color: var(--accent);
+    }
+
+    .page-title {
+      font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem);
+      font-weight: 700;
+      margin: 0 0 var(--space-sm) 0;
+      background: linear-gradient(135deg, var(--text-main), var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .page-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin: 0;
+      max-width: 700px;
+    }
+
+    .page-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .page-tag {
+      font-size: 0.75rem;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-full);
+      background: var(--badge-bg);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       CONTENT SECTIONS
+       ═══════════════════════════════════════════════════════════════ */
+    .section {
+      margin-bottom: var(--space-2xl);
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 var(--space-md) 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .section-title::before {
+      content: "";
+      width: 4px;
+      height: 1.25em;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       CARDS & PANELS
+       ═══════════════════════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      transition: all var(--transition-normal);
+    }
+
+    .card:hover {
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-md);
+    }
+
+    /* Info Box */
+    .info-box {
+      background: var(--accent-soft);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      font-size: 0.9rem;
+    }
+
+    .info-box.cyan {
+      background: var(--accent-2-soft);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SIMULATOR CONTAINER
+       ═══════════════════════════════════════════════════════════════ */
+    .simulator-container {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .simulator-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .simulator-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .simulator-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .simulator-body {
+      padding: var(--space-lg);
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .simulator-canvas-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--radius-md);
+      min-height: 300px;
+    }
+
+    .simulator-canvas {
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+    }
+
+    .simulator-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--bg-surface);
+      border-radius: var(--radius-md);
+    }
+
+    .simulator-param {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .simulator-param label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: var(--space-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .simulator-param input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .simulator-param-value {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BUTTONS
+       ═══════════════════════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: #4338ca;
+      border-color: #4338ca;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-medium);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-surface-hover);
+    }
+
+    .btn-icon {
+      padding: var(--space-sm);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TOPIC GRID (Home)
+       ═══════════════════════════════════════════════════════════════ */
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-md);
+    }
+
+    .topic-card {
+      background: radial-gradient(circle at top left, var(--bg-surface-hover), var(--bg-surface) 60%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: var(--space-lg);
+      text-decoration: none;
+      color: inherit;
+      transition: all var(--transition-normal);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .topic-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--accent));
+      opacity: 0;
+      transition: opacity var(--transition-normal);
+    }
+
+    .topic-card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .topic-card:hover::before {
+      opacity: 1;
+    }
+
+    .topic-card[data-theme="llm"] { --card-accent: #4f46e5; }
+    .topic-card[data-theme="rl"] { --card-accent: #22c55e; }
+    .topic-card[data-theme="diffusion"] { --card-accent: #06b6d4; }
+    .topic-card[data-theme="theory"] { --card-accent: #eab308; }
+    .topic-card[data-theme="bench"] { --card-accent: #ec4899; }
+
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: var(--space-md);
+      background: var(--accent-soft);
+    }
+
+    .topic-card[data-theme="llm"] .topic-icon { background: rgba(79, 70, 229, 0.15); }
+    .topic-card[data-theme="rl"] .topic-icon { background: rgba(34, 197, 94, 0.15); }
+    .topic-card[data-theme="diffusion"] .topic-icon { background: rgba(6, 182, 212, 0.15); }
+    .topic-card[data-theme="theory"] .topic-icon { background: rgba(234, 179, 8, 0.15); }
+    .topic-card[data-theme="bench"] .topic-icon { background: rgba(236, 72, 153, 0.15); }
+
+    .topic-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 var(--space-xs) 0;
+    }
+
+    .topic-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0 0 var(--space-md) 0;
+    }
+
+    .topic-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .topic-badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      background: var(--badge-bg);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .topic-badge.sim {
+      background: var(--accent-2-soft);
+      border-color: rgba(6, 182, 212, 0.4);
+      color: var(--accent-2);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PROSE CONTENT
+       ═══════════════════════════════════════════════════════════════ */
+    .prose {
+      max-width: 75ch;
+    }
+
+    .prose h2 {
+      font-size: 1.5rem;
+      margin: var(--space-xl) 0 var(--space-md) 0;
+    }
+
+    .prose h3 {
+      font-size: 1.2rem;
+      margin: var(--space-lg) 0 var(--space-sm) 0;
+    }
+
+    .prose p {
+      margin: 0 0 var(--space-md) 0;
+      color: var(--text-muted);
+    }
+
+    .prose ul, .prose ol {
+      margin: 0 0 var(--space-md) 0;
+      padding-left: var(--space-lg);
+      color: var(--text-muted);
+    }
+
+    .prose li {
+      margin-bottom: var(--space-xs);
+    }
+
+    .prose code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+      padding: 2px 6px;
+      background: var(--bg-surface);
+      border-radius: var(--radius-sm);
+      color: var(--accent-2);
+    }
+
+    .prose pre {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      overflow-x: auto;
+      margin: 0 0 var(--space-md) 0;
+    }
+
+    .prose pre code {
+      padding: 0;
+      background: none;
+    }
+
+    /* Math blocks */
+    .math-block {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      overflow-x: auto;
+      margin: var(--space-md) 0;
+      text-align: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ */
+    .footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl) var(--space-lg);
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ACCESSIBILITY
+       ═══════════════════════════════════════════════════════════════ */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--accent);
+      color: var(--text-main);
+      padding: var(--space-sm) var(--space-md);
+      z-index: 1000;
+      text-decoration: none;
+      border-radius: 0 0 var(--radius-sm) 0;
+      font-weight: 500;
+      transition: top var(--transition-fast);
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* Focus styles for keyboard navigation */
+    *:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Remove default focus for mouse users */
+    *:focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .main {
+        padding: var(--space-md);
+      }
+      .simulator-body {
+        padding: var(--space-md);
+      }
+      .simulator-panel {
+        flex-direction: column;
+      }
+      .page-title {
+        font-size: 1.5rem;
+      }
+      .topic-grid {
+        grid-template-columns: 1fr;
+      }
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      .nav, .skip-link, .simulator-container {
+        display: none;
+      }
+      body {
+        background: white;
+        color: black;
+      }
+      .main {
+        max-width: 100%;
+      }
+    }
+
+    /* Reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      html {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Skip to main content link for accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════════════════════════════ -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#home" class="nav-brand" onclick="navigate('home')">
+        <div class="nav-brand-icon">N</div>
+        <span>NeurIPS Explorer</span>
+      </a>
+
+      <button class="nav-mobile-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <div class="nav-links" id="navLinks">
+        <a href="#home" class="nav-link active" onclick="navigate('home')" data-nav="home">Home</a>
+
+        <div class="nav-dropdown">
+          <button class="nav-link nav-dropdown-trigger">Topics</button>
+          <div class="nav-dropdown-menu">
+            <a class="nav-dropdown-item" onclick="navigate('topic-hivemind')">
+              <div class="nav-dropdown-icon llm">H</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">LLM Diversity & Hivemind</div>
+                <div class="nav-dropdown-desc">Artificial Hivemind paper</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-attention')">
+              <div class="nav-dropdown-icon llm">A</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Gated Attention</div>
+                <div class="nav-dropdown-desc">Attention sink-free mechanisms</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-deep-rl')">
+              <div class="nav-dropdown-icon rl">R</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Deep RL Networks</div>
+                <div class="nav-dropdown-desc">1000-layer self-supervised RL</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-diffusion')">
+              <div class="nav-dropdown-icon diffusion">D</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Diffusion Dynamics</div>
+                <div class="nav-dropdown-desc">Why diffusion models don't memorize</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-rlvr')">
+              <div class="nav-dropdown-icon rl">L</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">RLVR & Reasoning</div>
+                <div class="nav-dropdown-desc">RL for LLM reasoning limits</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-online')">
+              <div class="nav-dropdown-icon theory">O</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Online Learning Theory</div>
+                <div class="nav-dropdown-desc">Transductive mistake bounds</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('topic-scaling')">
+              <div class="nav-dropdown-icon theory">S</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Superposition & Scaling</div>
+                <div class="nav-dropdown-desc">Neural scaling laws explained</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-dropdown">
+          <button class="nav-link nav-dropdown-trigger">Simulators</button>
+          <div class="nav-dropdown-menu">
+            <a class="nav-dropdown-item" onclick="navigate('sim-diversity')">
+              <div class="nav-dropdown-icon llm">D</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Diversity Analyzer</div>
+                <div class="nav-dropdown-desc">Measure text homogeneity</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('sim-attention')">
+              <div class="nav-dropdown-icon llm">A</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Attention Visualizer</div>
+                <div class="nav-dropdown-desc">Interactive attention matrices</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('sim-rl')">
+              <div class="nav-dropdown-icon rl">G</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Goal-Reaching Agent</div>
+                <div class="nav-dropdown-desc">RL depth scaling demo</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('sim-diffusion')">
+              <div class="nav-dropdown-icon diffusion">N</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Diffusion Process</div>
+                <div class="nav-dropdown-desc">Forward/reverse noise visualization</div>
+              </div>
+            </a>
+            <a class="nav-dropdown-item" onclick="navigate('sim-superposition')">
+              <div class="nav-dropdown-icon theory">F</div>
+              <div class="nav-dropdown-text">
+                <div class="nav-dropdown-title">Feature Superposition</div>
+                <div class="nav-dropdown-desc">Scaling law emergence</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <a href="2025_winners.html" class="nav-link" target="_blank" rel="noopener">Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT AREA
+       ═══════════════════════════════════════════════════════════════ -->
+  <main class="main" id="main-content" role="main">
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <h1 class="page-title">Explore NeurIPS 2025 Best Papers</h1>
+        <p class="page-subtitle">
+          Deep-dive into the research behind the 7 award-winning papers with comprehensive
+          explanations and interactive simulators.
+        </p>
+        <div class="page-meta">
+          <span class="page-tag">4 Best Papers</span>
+          <span class="page-tag">3 Runner-Ups</span>
+          <span class="page-tag">5 Simulators</span>
+          <span class="page-tag">Interactive Learning</span>
+        </div>
+      </div>
+
+      <section class="section">
+        <h2 class="section-title">Topics</h2>
+        <div class="topic-grid">
+          <div class="topic-card" data-theme="llm" onclick="navigate('topic-hivemind')">
+            <div class="topic-icon">H</div>
+            <h3 class="topic-title">LLM Diversity & The Artificial Hivemind</h3>
+            <p class="topic-desc">Explore how LLMs produce homogeneous outputs and the societal implications of model monoculture.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Best Paper D&B</span>
+              <span class="topic-badge sim">Simulator</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="llm" onclick="navigate('topic-attention')">
+            <div class="topic-icon">A</div>
+            <h3 class="topic-title">Gated Attention Mechanisms</h3>
+            <p class="topic-desc">Learn about attention sink problems and how gating fixes long-context LLM performance.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Best Paper</span>
+              <span class="topic-badge sim">Simulator</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="rl" onclick="navigate('topic-deep-rl')">
+            <div class="topic-icon">R</div>
+            <h3 class="topic-title">1000-Layer Deep RL Networks</h3>
+            <p class="topic-desc">Discover how extreme depth enables self-supervised RL agents to reach goals without rewards.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Best Paper</span>
+              <span class="topic-badge sim">Simulator</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="diffusion" onclick="navigate('topic-diffusion')">
+            <div class="topic-icon">D</div>
+            <h3 class="topic-title">Diffusion Training Dynamics</h3>
+            <p class="topic-desc">Understand why diffusion models generalize instead of memorizing their training data.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Best Paper</span>
+              <span class="topic-badge sim">Simulator</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="rl" onclick="navigate('topic-rlvr')">
+            <div class="topic-icon">L</div>
+            <h3 class="topic-title">RLVR & LLM Reasoning</h3>
+            <p class="topic-desc">Examine whether reinforcement learning truly expands LLM reasoning capabilities.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Runner-Up</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="theory" onclick="navigate('topic-online')">
+            <div class="topic-icon">O</div>
+            <h3 class="topic-title">Transductive Online Learning</h3>
+            <p class="topic-desc">A 30-year-old open problem solved: the value of unlabeled data in online learning.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Runner-Up</span>
+            </div>
+          </div>
+
+          <div class="topic-card" data-theme="theory" onclick="navigate('topic-scaling')">
+            <div class="topic-icon">S</div>
+            <h3 class="topic-title">Superposition & Neural Scaling</h3>
+            <p class="topic-desc">Learn how feature superposition drives the famous neural scaling laws.</p>
+            <div class="topic-badges">
+              <span class="topic-badge">Runner-Up</span>
+              <span class="topic-badge sim">Simulator</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Quick Start</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">New to ML?</h3>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+              Start with the <strong>Diffusion Process</strong> simulator for an intuitive visual introduction,
+              then explore the <strong>Attention Visualizer</strong> to understand how transformers work.
+            </p>
+          </div>
+          <div class="card">
+            <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Experienced Practitioner?</h3>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+              Dive into <strong>Superposition & Scaling</strong> for cutting-edge theory, or explore
+              the <strong>RLVR & Reasoning</strong> analysis for insights on LLM training.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- TOPIC PAGES (placeholders - will be populated in Chunk 2) -->
+    <div class="page" id="page-topic-hivemind">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>LLM Diversity</span>
+        </div>
+        <h1 class="page-title">LLM Diversity & The Artificial Hivemind</h1>
+        <p class="page-subtitle">Understanding homogeneity in large language model outputs and its implications.</p>
+        <div class="page-meta">
+          <span class="page-tag">Best Paper - Datasets & Benchmarks</span>
+          <span class="page-tag">Liwei Jiang et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">The Problem: LLM Monoculture</h2>
+          <p>
+            When millions of people ask similar questions to the same LLM, they receive remarkably similar answers.
+            This phenomenon, termed the <strong>"Artificial Hivemind"</strong>, raises fundamental concerns about
+            the diversity of information, perspectives, and creative outputs in an AI-augmented society.
+          </p>
+          <div class="info-box">
+            <strong>Key Insight:</strong> Even when prompted with open-ended questions that should yield diverse responses,
+            LLMs exhibit strong intra-model repetition (same model gives similar answers) and inter-model homogeneity
+            (different models converge on similar outputs).
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Understanding Diversity Metrics</h2>
+          <p>The paper introduces several metrics to quantify output diversity:</p>
+
+          <h3>1. Lexical Diversity</h3>
+          <p>Measures variety at the word/token level using metrics like:</p>
+          <ul>
+            <li><strong>Type-Token Ratio (TTR):</strong> Unique words / Total words</li>
+            <li><strong>N-gram Diversity:</strong> Unique n-grams across outputs</li>
+            <li><strong>Self-BLEU:</strong> How similar outputs are to each other (lower = more diverse)</li>
+          </ul>
+
+          <h3>2. Semantic Diversity</h3>
+          <p>Captures meaning-level variation:</p>
+          <ul>
+            <li><strong>Embedding Distance:</strong> Cosine distance between response embeddings</li>
+            <li><strong>Topic Distribution:</strong> Spread across identified themes</li>
+            <li><strong>Stance Diversity:</strong> Range of positions on subjective questions</li>
+          </ul>
+
+          <div class="math-block">
+            Self-BLEU = (1/N) * sum(BLEU(response_i, {all other responses}))
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Infinity-Chat Benchmark</h2>
+          <p>
+            The paper introduces <strong>Infinity-Chat</strong>, a benchmark of 26,000+ open-ended queries with
+            dense human annotations specifically designed to evaluate response diversity.
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Query Categories</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Creative writing prompts</li>
+                <li>Opinion & preference questions</li>
+                <li>Open-ended problem solving</li>
+                <li>Cultural & subjective topics</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Annotation Types</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Response quality ratings</li>
+                <li>Diversity judgments</li>
+                <li>Originality scores</li>
+                <li>Human baseline comparisons</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Key Findings</h2>
+
+          <h3>Intra-Model Homogeneity</h3>
+          <p>
+            When sampling multiple responses from the same model with the same prompt, outputs cluster tightly
+            in semantic space. Even with high temperature settings, the fundamental "answer shape" remains
+            remarkably consistent.
+          </p>
+
+          <h3>Inter-Model Convergence</h3>
+          <p>
+            Different LLM families (GPT, Claude, Llama, etc.) trained on overlapping internet data produce
+            responses that are more similar to each other than human responses are to each other. This suggests
+            a concerning convergence toward a shared "AI perspective."
+          </p>
+
+          <h3>Implications</h3>
+          <ul>
+            <li><strong>Echo chambers:</strong> AI-assisted content creation may reduce information diversity</li>
+            <li><strong>Cultural flattening:</strong> Minority viewpoints underrepresented in training data get further marginalized</li>
+            <li><strong>Creative stagnation:</strong> Automated content converges toward "average" outputs</li>
+            <li><strong>Value alignment:</strong> Whose values are reflected in homogeneous outputs?</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Technical Deep Dive</h2>
+
+          <h3>Why Does Homogeneity Occur?</h3>
+          <p>Several factors contribute to the hivemind effect:</p>
+
+          <ol>
+            <li>
+              <strong>Training Data Overlap:</strong> Major LLMs are trained on largely overlapping web corpora,
+              leading to similar statistical patterns.
+            </li>
+            <li>
+              <strong>RLHF Homogenization:</strong> Reinforcement Learning from Human Feedback pushes models
+              toward "safe," mainstream responses that satisfy average annotator preferences.
+            </li>
+            <li>
+              <strong>Mode Collapse in Generation:</strong> Autoregressive sampling tends to find high-probability
+              paths, which are often the same paths across similar models.
+            </li>
+            <li>
+              <strong>Benchmark Optimization:</strong> Models optimized for the same benchmarks develop similar
+              capabilities and failure modes.
+            </li>
+          </ol>
+
+          <div class="info-box cyan">
+            <strong>Try It:</strong> Use the <a href="#sim-diversity" onclick="navigate('sim-diversity')" style="color: var(--accent-2);">Diversity Analyzer simulator</a>
+            to measure homogeneity in text samples and visualize clustering patterns.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-rlvr')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">RLVR & LLM Reasoning</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How RL training affects model behavior and output diversity.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-scaling')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Neural Scaling Laws</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Why larger models might not solve the diversity problem.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-attention">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>Gated Attention</span>
+        </div>
+        <h1 class="page-title">Gated Attention for Large Language Models</h1>
+        <p class="page-subtitle">Non-linearity, sparsity, and attention-sink-free mechanisms.</p>
+        <div class="page-meta">
+          <span class="page-tag">Best Paper</span>
+          <span class="page-tag">Zihan Qiu et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">Self-Attention Refresher</h2>
+          <p>
+            The transformer architecture relies on <strong>self-attention</strong> to allow each token to
+            attend to all other tokens in a sequence. The standard formulation:
+          </p>
+          <div class="math-block">
+            Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) * V
+          </div>
+          <p>Where:</p>
+          <ul>
+            <li><strong>Q (Query):</strong> What information am I looking for?</li>
+            <li><strong>K (Key):</strong> What information do I contain?</li>
+            <li><strong>V (Value):</strong> What information do I provide if matched?</li>
+            <li><strong>d_k:</strong> Dimension of keys (for scaling)</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Attention Sink Problem</h2>
+          <p>
+            A critical issue emerges in long-context scenarios: <strong>attention sink</strong>. This phenomenon
+            causes attention to concentrate heavily on early tokens (often the BOS token or initial punctuation),
+            regardless of their semantic relevance.
+          </p>
+
+          <div class="info-box">
+            <strong>Why Does This Happen?</strong><br>
+            The softmax function must produce a probability distribution that sums to 1. When no tokens are
+            particularly relevant, the model "dumps" excess attention mass onto early tokens as a default
+            behavior learned during training.
+          </div>
+
+          <h3>Consequences of Attention Sink</h3>
+          <ul>
+            <li><strong>Wasted capacity:</strong> Attention heads spend resources on uninformative tokens</li>
+            <li><strong>Long-context degradation:</strong> Performance drops as context length increases</li>
+            <li><strong>Position bias:</strong> Early tokens disproportionately influence outputs</li>
+            <li><strong>Training instability:</strong> Gradient flow becomes uneven across positions</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Gated Attention Solution</h2>
+          <p>
+            The paper proposes a simple yet effective modification: adding a <strong>head-specific sigmoid gate</strong>
+            after the scaled dot-product attention (SDPA).
+          </p>
+
+          <div class="math-block">
+            GatedAttn(Q, K, V) = sigmoid(g) * softmax(QK^T / sqrt(d_k)) * V
+          </div>
+
+          <p>Where <code>g</code> is a learnable scalar parameter per attention head.</p>
+
+          <h3>How It Works</h3>
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Gate Value Near 0</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                The attention head's output is suppressed. This allows heads to "opt out" when they have
+                nothing meaningful to contribute, rather than dumping attention on sinks.
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Gate Value Near 1</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Standard attention behavior. The head contributes normally when it has found relevant
+                key-query matches.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Experimental Results</h2>
+          <p>
+            The paper conducts extensive comparisons across dozens of gating variants on both 15B MoE
+            (Mixture of Experts) and 1.7B dense models:
+          </p>
+
+          <h3>Key Findings</h3>
+          <ol>
+            <li>
+              <strong>Attention Sink Elimination:</strong> Gated attention removes the concentration of
+              attention mass on early tokens, leading to more uniform and semantically meaningful attention patterns.
+            </li>
+            <li>
+              <strong>Training Stability:</strong> Models train more smoothly with reduced gradient variance
+              across layers and positions.
+            </li>
+            <li>
+              <strong>Long-Context Performance:</strong> Significant improvements on tasks requiring
+              attention over 32K+ tokens.
+            </li>
+            <li>
+              <strong>Sparse Attention Emergence:</strong> Gates naturally learn to create sparse attention
+              patterns, improving efficiency.
+            </li>
+          </ol>
+
+          <div class="info-box cyan">
+            <strong>Real-World Impact:</strong> This gating mechanism is now deployed in Qwen3-Next models,
+            demonstrating its practical value at scale.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Technical Deep Dive</h2>
+
+          <h3>Gating Variants Explored</h3>
+          <p>The paper systematically evaluates multiple gating designs:</p>
+
+          <ul>
+            <li><strong>Per-head scalar gate:</strong> Single learnable parameter per head (winner)</li>
+            <li><strong>Per-position gate:</strong> Gate varies by sequence position</li>
+            <li><strong>Content-dependent gate:</strong> Gate computed from input embeddings</li>
+            <li><strong>Key-query gate:</strong> Gate based on attention scores themselves</li>
+          </ul>
+
+          <p>
+            Surprisingly, the simplest variant (per-head scalar) outperforms more complex alternatives,
+            suggesting that the key benefit comes from allowing heads to suppress themselves entirely
+            rather than fine-grained per-token control.
+          </p>
+
+          <h3>Implementation</h3>
+          <pre><code>class GatedAttention(nn.Module):
+    def __init__(self, d_model, n_heads):
+        super().__init__()
+        self.attn = MultiHeadAttention(d_model, n_heads)
+        # One gate per head, initialized to pass through
+        self.gates = nn.Parameter(torch.ones(n_heads))
+
+    def forward(self, x):
+        attn_out = self.attn(x)  # [batch, seq, heads, dim]
+        gates = torch.sigmoid(self.gates)  # [heads]
+        return attn_out * gates.view(1, 1, -1, 1)</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Visualize It</h2>
+          <div class="info-box cyan">
+            <strong>Try It:</strong> Use the <a href="#sim-attention" onclick="navigate('sim-attention')" style="color: var(--accent-2);">Attention Visualizer</a>
+            to see attention patterns with and without gating, and observe how the sink phenomenon disappears.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-scaling')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Neural Scaling Laws</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How architectural improvements interact with model scale.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-deep-rl')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Deep Network Scaling</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Depth scaling in neural networks beyond transformers.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-deep-rl">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>Deep RL</span>
+        </div>
+        <h1 class="page-title">1000-Layer Networks for Self-Supervised RL</h1>
+        <p class="page-subtitle">Scaling depth can enable new goal-reaching capabilities.</p>
+        <div class="page-meta">
+          <span class="page-tag">Best Paper</span>
+          <span class="page-tag">Kevin Wang et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">The Depth Paradox in RL</h2>
+          <p>
+            For years, the conventional wisdom held that <strong>reinforcement learning and very deep networks
+            don't mix</strong>. While computer vision scaled to hundreds of layers (ResNet-152, ViT-Giant),
+            RL algorithms struggled with networks beyond a few dozen layers.
+          </p>
+
+          <div class="info-box">
+            <strong>Why Was Depth Problematic?</strong><br>
+            RL training involves non-stationary targets, high variance gradients, and bootstrapping errors
+            that compound through deep networks. The result: training instability, gradient explosion/vanishing,
+            and poor sample efficiency.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Self-Supervised RL Fundamentals</h2>
+          <p>
+            The paper leverages <strong>self-supervised reinforcement learning</strong>, which learns useful
+            representations and policies without explicit reward signals. Instead, the agent learns through
+            intrinsic objectives like:
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Goal-Conditioned Learning</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                The agent learns to reach arbitrary goal states. Given current state s and goal g,
+                learn policy pi(a|s,g) that reaches g.
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Contrastive Objectives</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Learn state representations where "reachable" state pairs are close in embedding space
+                and "unreachable" pairs are far apart.
+              </p>
+            </div>
+          </div>
+
+          <h3>The Contrastive RL Formulation</h3>
+          <div class="math-block">
+            L = -log[exp(f(s,g)) / (exp(f(s,g)) + sum_neg(exp(f(s,g_neg))))]
+          </div>
+          <p>
+            This objective encourages the network to learn representations that capture the temporal
+            structure of the environment: which states can be reached from which other states.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Why Depth Enables New Capabilities</h2>
+          <p>
+            The paper's central finding is that extreme depth (up to 1024 layers) isn't just possible
+            in self-supervised RL; it enables <strong>qualitatively new behaviors</strong> that shallower
+            networks cannot achieve.
+          </p>
+
+          <h3>Emergent Capabilities with Depth</h3>
+          <ol>
+            <li>
+              <strong>Long-Horizon Planning:</strong> Deeper networks can represent longer chains of
+              reasoning about state reachability, enabling goals that require many intermediate steps.
+            </li>
+            <li>
+              <strong>Compositional Skills:</strong> The network learns to compose primitive behaviors
+              into complex sequences, similar to how deep vision models compose edges into objects.
+            </li>
+            <li>
+              <strong>Generalization to Novel Goals:</strong> Deeper networks show better zero-shot
+              transfer to goal configurations not seen during training.
+            </li>
+            <li>
+              <strong>Robust Locomotion:</strong> In simulated robotics tasks, very deep networks
+              discover more stable and efficient movement patterns.
+            </li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Architecture & Training</h2>
+
+          <h3>Network Architecture</h3>
+          <p>The 1024-layer network uses:</p>
+          <ul>
+            <li><strong>Residual connections:</strong> Essential for gradient flow</li>
+            <li><strong>Layer normalization:</strong> Stabilizes activations at each layer</li>
+            <li><strong>Careful initialization:</strong> Scaled initialization to prevent explosion</li>
+            <li><strong>Bottleneck blocks:</strong> Reduce computation while maintaining depth</li>
+          </ul>
+
+          <h3>Training Innovations</h3>
+          <ul>
+            <li><strong>Hindsight goal relabeling:</strong> Every trajectory provides supervision
+                for multiple goal-reaching problems</li>
+            <li><strong>Hard negative mining:</strong> Sample challenging negative examples for
+                the contrastive loss</li>
+            <li><strong>Progressive depth:</strong> Start with fewer layers and gradually increase</li>
+          </ul>
+
+          <pre><code># Simplified contrastive goal-reaching
+def compute_loss(encoder, states, goals, negatives):
+    s_embed = encoder(states)      # Very deep encoder
+    g_embed = encoder(goals)
+    neg_embed = encoder(negatives)
+
+    pos_sim = cosine_sim(s_embed, g_embed)
+    neg_sim = cosine_sim(s_embed, neg_embed)
+
+    return -log_softmax(pos_sim, neg_sim)</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Experimental Results</h2>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Maze Navigation</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                1024-layer: <strong>94% success</strong><br>
+                64-layer: 71% success<br>
+                Deep networks find shorter paths through complex mazes.
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Robotic Manipulation</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                1024-layer: <strong>87% success</strong><br>
+                64-layer: 62% success<br>
+                Enables multi-step object rearrangement.
+              </p>
+            </div>
+          </div>
+
+          <div class="info-box cyan">
+            <strong>Key Insight:</strong> There's a phase transition around 256-512 layers where
+            the network suddenly gains the ability to solve previously impossible long-horizon tasks.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Try the Simulator</h2>
+          <div class="info-box cyan">
+            <strong>Interactive Demo:</strong> Watch a <a href="#sim-rl" onclick="navigate('sim-rl')" style="color: var(--accent-2);">goal-reaching agent</a>
+            learn in real-time. Adjust network depth and observe how deeper networks discover more efficient paths.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-rlvr')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">RLVR & LLM Reasoning</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How RL interacts with language model capabilities.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-attention')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Attention Mechanisms</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Architectural innovations for deep networks.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-diffusion">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>Diffusion</span>
+        </div>
+        <h1 class="page-title">Why Diffusion Models Don't Memorize</h1>
+        <p class="page-subtitle">The role of implicit dynamical regularization in training.</p>
+        <div class="page-meta">
+          <span class="page-tag">Best Paper</span>
+          <span class="page-tag">Tony Bonnaire et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">Diffusion Models 101</h2>
+          <p>
+            Diffusion models generate data by learning to reverse a noise-adding process. The key idea is
+            elegantly simple: if we know how to gradually add noise until data becomes pure Gaussian noise,
+            we can learn to reverse this process and generate new data from noise.
+          </p>
+
+          <h3>Forward Process (Adding Noise)</h3>
+          <div class="math-block">
+            x_t = sqrt(alpha_t) * x_0 + sqrt(1 - alpha_t) * epsilon
+          </div>
+          <p>
+            Over T timesteps, clean data x_0 becomes increasingly noisy until x_T is nearly pure Gaussian noise.
+          </p>
+
+          <h3>Reverse Process (Removing Noise)</h3>
+          <div class="math-block">
+            x_{t-1} = (1/sqrt(alpha_t)) * (x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * epsilon_theta(x_t, t))
+          </div>
+          <p>
+            A neural network epsilon_theta learns to predict the noise at each step, enabling step-by-step denoising.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Over-Parameterization Paradox</h2>
+          <p>
+            Modern diffusion models have <strong>billions of parameters</strong> trained on datasets of
+            <strong>millions of images</strong>. Classical learning theory suggests these models should
+            massively overfit, essentially memorizing their training data.
+          </p>
+
+          <div class="info-box">
+            <strong>The Puzzle:</strong> Despite having enough capacity to memorize every training example,
+            diffusion models generate novel images that don't exist in the training set. How?
+          </div>
+
+          <p>
+            This paper provides a theoretical framework explaining why diffusion models generalize instead
+            of memorizing, based on the <strong>implicit regularization</strong> of training dynamics.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Two Characteristic Timescales</h2>
+          <p>
+            The paper identifies two critical timescales in diffusion model training:
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-3);">t_learn</h3>
+              <p style="margin: 0 0 var(--space-sm) 0; color: var(--text-muted); font-size: 0.9rem;">
+                The time required to learn the <strong>underlying distribution</strong>. The model captures
+                the statistical structure of the data class.
+              </p>
+              <p style="margin: 0; color: var(--text-dim); font-size: 0.85rem;">
+                Scales as: O(sqrt(N))
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-5);">t_memorize</h3>
+              <p style="margin: 0 0 var(--space-sm) 0; color: var(--text-muted); font-size: 0.9rem;">
+                The time required to <strong>memorize individual examples</strong>. The model starts
+                reproducing specific training images.
+              </p>
+              <p style="margin: 0; color: var(--text-dim); font-size: 0.85rem;">
+                Scales as: O(N)
+              </p>
+            </div>
+          </div>
+
+          <h3>The Generalization Window</h3>
+          <p>
+            Because t_memorize grows faster than t_learn with dataset size N, there exists a
+            <strong>"generalization window"</strong> where the model has learned the data distribution
+            but hasn't yet memorized specific examples.
+          </p>
+
+          <div class="math-block">
+            Generalization Window = [t_learn, t_memorize] ~ [O(sqrt(N)), O(N)]
+          </div>
+
+          <p>
+            For large datasets, this window is huge! With 10M images, the window spans roughly from
+            3,000 to 10,000,000 training steps.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Implicit Dynamical Regularization</h2>
+          <p>
+            The key insight is that gradient descent on the diffusion objective has an inherent
+            <strong>regularization effect</strong> that emerges from the training dynamics themselves,
+            without any explicit regularization term.
+          </p>
+
+          <h3>How It Works</h3>
+          <ol>
+            <li>
+              <strong>Early Training:</strong> The network learns broad, coarse-grained features
+              that capture the general structure of the data distribution.
+            </li>
+            <li>
+              <strong>Mid Training:</strong> Fine-grained details are learned, but the model still
+              generates diverse outputs by interpolating between training examples.
+            </li>
+            <li>
+              <strong>Late Training:</strong> Individual training examples begin to emerge as
+              the network capacity starts encoding specific images.
+            </li>
+          </ol>
+
+          <div class="info-box cyan">
+            <strong>Practical Implication:</strong> Training diffusion models too long can lead to
+            memorization and potential privacy/copyright issues. The paper provides theoretical
+            guidance for optimal stopping times.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Mathematical Framework</h2>
+
+          <p>The paper analyzes training dynamics using tools from statistical physics:</p>
+
+          <h3>Score Function Learning</h3>
+          <p>
+            Diffusion models learn the <em>score function</em>: the gradient of log probability density.
+          </p>
+          <div class="math-block">
+            s_theta(x, t) approximates grad_x log p_t(x)
+          </div>
+
+          <h3>Information-Theoretic Bound</h3>
+          <p>
+            The generalization error is bounded by the mutual information between the model parameters
+            and individual training examples, which grows slowly during the generalization window.
+          </p>
+
+          <h3>Kernel Regime Analysis</h3>
+          <p>
+            In the infinite-width limit, diffusion training dynamics can be analyzed as a kernel method,
+            revealing the implicit bias toward smooth, generalizing solutions.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Visualize the Diffusion Process</h2>
+          <div class="info-box cyan">
+            <strong>Interactive Demo:</strong> Use the <a href="#sim-diffusion" onclick="navigate('sim-diffusion')" style="color: var(--accent-2);">Diffusion Process Visualizer</a>
+            to see forward and reverse diffusion in action, and explore the generalization window concept.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-scaling')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Neural Scaling Laws</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How model capacity relates to generalization.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-online')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Online Learning Theory</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Theoretical foundations of learning dynamics.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-rlvr">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>RLVR</span>
+        </div>
+        <h1 class="page-title">Does RL Really Incentivize Reasoning in LLMs?</h1>
+        <p class="page-subtitle">Beyond the base model: examining RLVR's true impact.</p>
+        <div class="page-meta">
+          <span class="page-tag">Runner-Up</span>
+          <span class="page-tag">Yang Yue et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">What is RLVR?</h2>
+          <p>
+            <strong>Reinforcement Learning with Verifiable Rewards (RLVR)</strong> is a training paradigm
+            where LLMs are fine-tuned using RL with rewards based on objectively verifiable outcomes.
+            Unlike RLHF (human feedback), RLVR rewards are programmatic: math problems have correct answers,
+            code either passes tests or doesn't.
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Verifiable Domains</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Mathematical reasoning</li>
+                <li>Code generation</li>
+                <li>Logic puzzles</li>
+                <li>Formal proofs</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">RLVR Methods</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>PPO with outcome rewards</li>
+                <li>Expert iteration</li>
+                <li>GRPO / DPO variants</li>
+                <li>Process reward models</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Central Question</h2>
+          <div class="info-box">
+            <strong>Does RLVR teach LLMs new reasoning capabilities, or does it simply make the model
+            better at finding and selecting reasoning patterns it already knows?</strong>
+          </div>
+
+          <p>
+            This distinction matters enormously. If RLVR adds new reasoning, we can expect continued
+            improvement with more RL training. If it only improves <em>sampling efficiency</em>, we'll
+            hit a ceiling defined by the base model's latent capabilities.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Key Findings</h2>
+
+          <h3>Finding 1: No New Reasoning Patterns</h3>
+          <p>
+            Across extensive experiments, the paper finds that RLVR models solve problems using
+            <strong>the same reasoning strategies</strong> present in base model samples. When you
+            sample enough responses from the base model, you find the same solution patterns that
+            RLVR models produce more reliably.
+          </p>
+
+          <h3>Finding 2: Improved Sampling Efficiency</h3>
+          <p>
+            What RLVR does accomplish is dramatic improvement in <strong>sampling efficiency</strong>.
+            Where a base model might need 100 samples to find a correct solution, an RLVR model
+            might need only 5.
+          </p>
+
+          <div class="math-block">
+            Pass@1(RLVR) approx Pass@k(Base) for some k >> 1
+          </div>
+
+          <h3>Finding 3: Narrowed Exploration</h3>
+          <p>
+            RLVR training <strong>narrows the model's exploration</strong>. It learns to avoid
+            low-reward trajectories, effectively pruning the sampling tree. This improves
+            efficiency but doesn't expand what's reachable.
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-3);">Before RLVR</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Wide exploration, many wrong paths sampled, occasional correct solutions found
+                through extensive sampling.
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent);">After RLVR</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Narrow exploration, high-reward paths favored, correct solutions found reliably
+                but from the same set of reachable solutions.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Distillation Alternative</h2>
+          <p>
+            Interestingly, the paper finds that <strong>distillation</strong> from stronger models
+            <em>does</em> add genuinely new reasoning capabilities. When a weaker model learns
+            from a stronger teacher's traces, it acquires reasoning patterns that weren't in its
+            original distribution.
+          </p>
+
+          <div class="info-box cyan">
+            <strong>Implication:</strong> For expanding reasoning capabilities, distillation from
+            stronger models may be more effective than RLVR on the same model. RLVR is better suited
+            for improving reliability of existing capabilities.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Technical Analysis</h2>
+
+          <h3>Methodology</h3>
+          <p>The paper uses several techniques to probe reasoning boundaries:</p>
+          <ul>
+            <li>
+              <strong>Coverage Analysis:</strong> Compare the set of problems solvable by base model
+              (with many samples) vs RLVR model (with few samples).
+            </li>
+            <li>
+              <strong>Solution Pattern Clustering:</strong> Embed solution traces and cluster to
+              identify distinct reasoning strategies.
+            </li>
+            <li>
+              <strong>Ablation Studies:</strong> Test across model sizes, RL algorithms, and
+              problem domains.
+            </li>
+          </ul>
+
+          <h3>Results Across Conditions</h3>
+          <p>
+            The core finding holds across:
+          </p>
+          <ul>
+            <li>Model sizes from 7B to 70B parameters</li>
+            <li>PPO, DPO, GRPO algorithms</li>
+            <li>Math (GSM8K, MATH) and code (HumanEval, MBPP) benchmarks</li>
+            <li>Different reward models and training durations</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Implications for AI Development</h2>
+
+          <h3>Scaling RLVR</h3>
+          <p>
+            These findings suggest diminishing returns from RLVR as training continues. Once
+            the model has learned to reliably select good reasoning paths, further RL provides
+            minimal benefit.
+          </p>
+
+          <h3>Compute Allocation</h3>
+          <p>
+            For pushing reasoning frontiers, compute may be better spent on:
+          </p>
+          <ol>
+            <li>Training larger base models with more diverse data</li>
+            <li>Distillation from ensemble of strong reasoners</li>
+            <li>Test-time compute (search, verification, retry)</li>
+          </ol>
+
+          <h3>The Reasoning Ceiling</h3>
+          <p>
+            Current LLMs may have a "reasoning ceiling" determined by their pretraining. RLVR
+            helps reach this ceiling efficiently but doesn't raise it. Breaking through may
+            require fundamentally different approaches.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-hivemind')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">LLM Diversity</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How training affects output diversity and homogeneity.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-deep-rl')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Deep RL Networks</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                When RL does enable new capabilities.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-online">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>Online Learning</span>
+        </div>
+        <h1 class="page-title">Optimal Mistake Bounds for Transductive Online Learning</h1>
+        <p class="page-subtitle">Resolving a 30-year-old open problem on the value of unlabeled data.</p>
+        <div class="page-meta">
+          <span class="page-tag">Runner-Up</span>
+          <span class="page-tag">Zachary Chase et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">Online Learning Setup</h2>
+          <p>
+            In <strong>online learning</strong>, a learner faces a sequence of examples one at a time.
+            For each example, the learner must make a prediction <em>before</em> seeing the true label.
+            After predicting, the learner receives feedback and can update their hypothesis.
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">The Protocol</h3>
+              <ol style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Adversary presents instance x_t</li>
+                <li>Learner predicts label y_hat_t</li>
+                <li>True label y_t revealed</li>
+                <li>Learner updates hypothesis</li>
+                <li>Repeat for T rounds</li>
+              </ol>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Performance Metric</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                <strong>Mistake bound:</strong> The maximum number of prediction errors the learner
+                makes over the entire sequence, in the worst case.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Transductive vs Standard Online Learning</h2>
+
+          <h3>Standard Online Learning</h3>
+          <p>
+            The adversary can present <em>any</em> instance at each round. The learner has no advance
+            knowledge of what instances will appear.
+          </p>
+          <div class="math-block">
+            Mistake Bound = O(d) where d = VC dimension
+          </div>
+
+          <h3>Transductive Online Learning</h3>
+          <p>
+            The learner knows <em>in advance</em> which instances will appear (but not their labels
+            or order). This represents having access to <strong>unlabeled data</strong>.
+          </p>
+
+          <div class="info-box">
+            <strong>The Open Problem (30 years!):</strong> How much does knowing the unlabeled
+            instances in advance help? Can we prove tight bounds on the improvement?
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Main Result</h2>
+          <p>
+            The paper proves <strong>tight bounds</strong> showing a quadratic gap between transductive
+            and standard online learning:
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-4);">Standard Online</h3>
+              <div class="math-block" style="margin: var(--space-sm) 0;">
+                Mistakes = Theta(d)
+              </div>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Linear in VC dimension
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-3);">Transductive</h3>
+              <div class="math-block" style="margin: var(--space-sm) 0;">
+                Mistakes = Theta(sqrt(d))
+              </div>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Square root of VC dimension
+              </p>
+            </div>
+          </div>
+
+          <h3>The Quadratic Gap</h3>
+          <p>
+            This means that knowing which instances you'll face (but not their labels) can provide
+            an <strong>exponential improvement</strong> in learning efficiency. For a hypothesis class
+            with d = 100, standard online learning may make ~100 mistakes while transductive can
+            achieve ~10 mistakes.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Technical Insights</h2>
+
+          <h3>Lower Bound Construction</h3>
+          <p>
+            The paper constructs an adversarial instance sequence where any online learner must
+            make at least Omega(sqrt(d)) mistakes, even with advance knowledge of instances.
+            The construction uses sophisticated combinatorial arguments involving:
+          </p>
+          <ul>
+            <li>Carefully designed hypothesis classes</li>
+            <li>Probabilistic adversary strategies</li>
+            <li>Information-theoretic lower bounds</li>
+          </ul>
+
+          <h3>Upper Bound Algorithm</h3>
+          <p>
+            The paper provides an algorithm achieving O(sqrt(d)) mistakes in the transductive setting.
+            Key techniques include:
+          </p>
+          <ul>
+            <li><strong>Version space analysis:</strong> Track consistent hypotheses</li>
+            <li><strong>Weighted majority voting:</strong> Hedge across plausible hypotheses</li>
+            <li><strong>Careful tie-breaking:</strong> Exploit structure of unlabeled instances</li>
+          </ul>
+
+          <div class="info-box cyan">
+            <strong>Intuition:</strong> Knowing the instances in advance lets you precompute
+            which hypotheses are "similar" on the specific instances you'll face, enabling
+            more efficient version space reduction.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Why This Matters</h2>
+
+          <h3>The Value of Unlabeled Data</h3>
+          <p>
+            This result formally quantifies a fundamental question in machine learning: <em>how much
+            does unlabeled data help?</em> In the online learning setting, the answer is: a lot,
+            specifically a quadratic improvement.
+          </p>
+
+          <h3>Connections to Semi-Supervised Learning</h3>
+          <p>
+            The transductive setting models scenarios where we have a fixed pool of unlabeled examples
+            and must predict labels as they're requested. This connects to:
+          </p>
+          <ul>
+            <li>Active learning: choosing which examples to label</li>
+            <li>Semi-supervised learning: leveraging unlabeled structure</li>
+            <li>Transductive SVMs: predicting on a fixed test set</li>
+          </ul>
+
+          <h3>Practical Implications</h3>
+          <ul>
+            <li><strong>Data collection:</strong> Knowing your test distribution can dramatically improve sample efficiency</li>
+            <li><strong>Domain adaptation:</strong> Access to unlabeled target data enables better transfer</li>
+            <li><strong>Cold start:</strong> In recommendation systems, knowing the items enables better user modeling</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Historical Context</h2>
+          <p>
+            This problem was first posed in the 1990s during the early theoretical study of online
+            learning. Notable attempts include:
+          </p>
+          <ul>
+            <li><strong>1995:</strong> Initial upper bounds proved but not tight</li>
+            <li><strong>2000s:</strong> Progress on special cases (linear classifiers, finite classes)</li>
+            <li><strong>2010s:</strong> Improved bounds but still gaps between upper and lower</li>
+            <li><strong>2025:</strong> This paper finally closes the gap!</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-scaling')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Neural Scaling Laws</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How sample complexity relates to model capacity.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-diffusion')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Diffusion Training Dynamics</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Another lens on learning-theoretic phenomena.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="page" id="page-topic-scaling">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Topics</span>
+          <span>/</span>
+          <span>Scaling Laws</span>
+        </div>
+        <h1 class="page-title">Superposition Yields Robust Neural Scaling</h1>
+        <p class="page-subtitle">How feature superposition drives the famous scaling laws.</p>
+        <div class="page-meta">
+          <span class="page-tag">Runner-Up</span>
+          <span class="page-tag">Yizhou Liu et al.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <section class="section">
+          <h2 class="section-title">Neural Scaling Laws Refresher</h2>
+          <p>
+            One of the most remarkable empirical findings in deep learning is that model performance
+            follows <strong>predictable power laws</strong> as we scale compute, data, and parameters:
+          </p>
+
+          <div class="math-block">
+            Loss ~ C^(-alpha) where C = compute, parameters, or data
+          </div>
+
+          <p>
+            The famous <strong>Chinchilla scaling laws</strong> showed that for a fixed compute budget,
+            there's an optimal balance between model size and training data. But <em>why</em> do these
+            clean power laws emerge?
+          </p>
+
+          <div class="info-box">
+            <strong>The Mystery:</strong> Scaling laws seem almost magical. Why should such complex
+            systems follow such simple mathematical relationships? This paper proposes an answer:
+            <strong>feature superposition</strong>.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">What is Feature Superposition?</h2>
+          <p>
+            In a neural network, the model must represent many more <strong>features</strong> (concepts,
+            patterns) than it has <strong>dimensions</strong> (neurons, embedding coordinates). The
+            solution: pack multiple features into the same dimensions using <strong>superposition</strong>.
+          </p>
+
+          <h3>The Geometry</h3>
+          <p>
+            Imagine representing N features in a d-dimensional space where N >> d. Pure representation
+            would be impossible (we'd need N dimensions). Instead, features are represented as
+            <em>non-orthogonal</em> vectors that partially overlap:
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">Without Superposition</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Each feature gets its own dimension. N features need N dimensions. Clean but
+                capacity-limited.
+              </p>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem;">With Superposition</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                Features share dimensions. N >> d features packed into d dimensions. More capacity
+                but with interference.
+              </p>
+            </div>
+          </div>
+
+          <h3>The Trade-off</h3>
+          <p>
+            Superposition allows encoding more features but introduces <strong>interference</strong>.
+            When features share dimensions, activating one feature partially activates others.
+            The model must manage this interference to make accurate predictions.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">The Main Result</h2>
+          <p>
+            The paper proves that when models use superposition to pack features, the resulting
+            interference naturally produces <strong>power-law scaling</strong> of loss with model size:
+          </p>
+
+          <div class="math-block">
+            Loss proportional to 1/d^alpha where alpha depends on feature statistics
+          </div>
+
+          <h3>Key Insights</h3>
+          <ol>
+            <li>
+              <strong>Interference Decreases with Dimension:</strong> In higher-dimensional spaces,
+              random vectors are more nearly orthogonal, reducing interference.
+            </li>
+            <li>
+              <strong>Power-Law Emerges from Geometry:</strong> The rate at which orthogonality
+              improves with dimension follows a power law, explaining the scaling behavior.
+            </li>
+            <li>
+              <strong>Feature Importance Distribution Matters:</strong> The exponent alpha depends
+              on how features are distributed by importance (Zipfian, uniform, etc.).
+            </li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Technical Deep Dive</h2>
+
+          <h3>The Toy Model</h3>
+          <p>
+            The paper develops analysis using a controlled toy model:
+          </p>
+          <ul>
+            <li><strong>Input:</strong> Sparse binary feature vectors</li>
+            <li><strong>Task:</strong> Reconstruct features from compressed representation</li>
+            <li><strong>Architecture:</strong> Linear encoder-decoder with bottleneck</li>
+            <li><strong>Objective:</strong> Minimize reconstruction loss</li>
+          </ul>
+
+          <pre><code># Simplified toy model
+def superposition_model(x, W_encode, W_decode):
+    # Encode: N features -> d dimensions
+    h = W_encode @ x    # shape: (d,)
+
+    # Decode: d dimensions -> N features (with interference)
+    x_hat = W_decode @ h  # shape: (N,)
+
+    return x_hat
+
+# Loss includes interference from other features
+loss = ||x - x_hat||^2</code></pre>
+
+          <h3>Analysis Framework</h3>
+          <p>
+            Using random matrix theory and concentration inequalities, the paper shows:
+          </p>
+          <ul>
+            <li>Optimal encoding distributes features as nearly-orthogonal vectors</li>
+            <li>Expected interference scales as O(N/d) per feature</li>
+            <li>Total loss scales as O(N/d) = O(1/d) when N is fixed</li>
+            <li>For Zipfian feature importance, this becomes O(1/d^alpha)</li>
+          </ul>
+
+          <h3>Connection to Real LLMs</h3>
+          <p>
+            The paper validates predictions on open LLMs (Pythia, OLMo) by:
+          </p>
+          <ol>
+            <li>Extracting feature representations using sparse autoencoders</li>
+            <li>Measuring actual superposition levels</li>
+            <li>Correlating superposition with scaling behavior</li>
+            <li>Finding quantitative agreement with theory</li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">When Scaling Laws Break</h2>
+          <p>
+            The superposition framework also predicts <strong>when scaling laws should fail</strong>:
+          </p>
+
+          <div class="card-grid">
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-5);">Scaling Breaks When...</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Features can't be approximated linearly</li>
+                <li>Feature co-occurrence is highly structured</li>
+                <li>Model is too small for superposition</li>
+                <li>Task requires exact feature recovery</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3 style="margin: 0 0 var(--space-sm) 0; font-size: 1rem; color: var(--accent-3);">Scaling Holds When...</h3>
+              <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-muted); font-size: 0.9rem;">
+                <li>Many sparse features exist</li>
+                <li>Approximate reconstruction suffices</li>
+                <li>Features have Zipfian importance</li>
+                <li>Model capacity allows superposition</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Implications</h2>
+
+          <h3>For Scaling Research</h3>
+          <p>
+            Understanding <em>why</em> scaling laws work helps predict when they'll break.
+            Tasks requiring precise, non-superposed representations may not follow standard
+            scaling predictions.
+          </p>
+
+          <h3>For Interpretability</h3>
+          <p>
+            Superposition is both a blessing (efficiency) and a curse (interpretability).
+            Features entangled in superposition are hard to disentangle, explaining why
+            neural network interpretability is challenging.
+          </p>
+
+          <h3>For Architecture Design</h3>
+          <p>
+            Architectures that manage superposition better (e.g., sparse models, modular
+            networks) may achieve better scaling or interpretability trade-offs.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Explore Superposition</h2>
+          <div class="info-box cyan">
+            <strong>Interactive Demo:</strong> Use the <a href="#sim-superposition" onclick="navigate('sim-superposition')" style="color: var(--accent-2);">Feature Superposition Demo</a>
+            to visualize how features interfere in low-dimensional spaces and see scaling law emergence.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Related Topics</h2>
+          <div class="card-grid">
+            <div class="card" onclick="navigate('topic-attention')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Gated Attention</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                Architectural innovations that improve efficiency.
+              </p>
+            </div>
+            <div class="card" onclick="navigate('topic-diffusion')" style="cursor: pointer;">
+              <h3 style="margin: 0 0 var(--space-xs) 0; font-size: 0.95rem;">Diffusion Dynamics</h3>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">
+                How implicit regularization affects model behavior.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- SIMULATOR PAGES (placeholders - will be populated in Chunk 3) -->
+    <div class="page" id="page-sim-diversity">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Simulators</span>
+          <span>/</span>
+          <span>Diversity Analyzer</span>
+        </div>
+        <h1 class="page-title">LLM Diversity Analyzer</h1>
+        <p class="page-subtitle">Measure and visualize text homogeneity across multiple samples.</p>
+      </div>
+      <div class="simulator-container">
+        <div class="simulator-header">
+          <h3 class="simulator-title">Text Diversity Metrics</h3>
+          <div class="simulator-controls">
+            <button class="btn btn-secondary" onclick="DiversitySim.loadExample()">Load Example</button>
+            <button class="btn btn-secondary" onclick="DiversitySim.reset()">Reset</button>
+          </div>
+        </div>
+        <div class="simulator-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-xs);">
+                RESPONSE 1
+              </label>
+              <textarea id="div-text1" rows="5" style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-sm); color: var(--text-main); font-family: inherit; resize: vertical;" placeholder="Enter first LLM response..."></textarea>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-xs);">
+                RESPONSE 2
+              </label>
+              <textarea id="div-text2" rows="5" style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-sm); color: var(--text-main); font-family: inherit; resize: vertical;" placeholder="Enter second LLM response..."></textarea>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-xs);">
+                RESPONSE 3
+              </label>
+              <textarea id="div-text3" rows="5" style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-sm); color: var(--text-main); font-family: inherit; resize: vertical;" placeholder="Enter third LLM response..."></textarea>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-xs);">
+                RESPONSE 4
+              </label>
+              <textarea id="div-text4" rows="5" style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-sm); color: var(--text-main); font-family: inherit; resize: vertical;" placeholder="Enter fourth LLM response..."></textarea>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top: var(--space-md); width: 100%;" onclick="DiversitySim.analyze()">
+            Analyze Diversity
+          </button>
+
+          <div id="div-results" style="margin-top: var(--space-md); display: none;">
+            <h4 style="margin: 0 0 var(--space-md) 0; font-size: 1rem;">Results</h4>
+            <div class="card-grid">
+              <div class="card">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Lexical Diversity (TTR)</div>
+                <div id="div-ttr" style="font-size: 1.5rem; font-weight: 600; color: var(--accent);">--</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Unique words / Total words</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Avg Jaccard Similarity</div>
+                <div id="div-jaccard" style="font-size: 1.5rem; font-weight: 600; color: var(--accent-2);">--</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Word overlap between pairs</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Unique N-grams</div>
+                <div id="div-ngrams" style="font-size: 1.5rem; font-weight: 600; color: var(--accent-3);">--</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Distinct 3-grams across all</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Homogeneity Score</div>
+                <div id="div-homogeneity" style="font-size: 1.5rem; font-weight: 600; color: var(--accent-5);">--</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">0 = diverse, 100 = identical</div>
+              </div>
+            </div>
+            <div id="div-interpretation" class="info-box" style="margin-top: var(--space-md);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-sim-attention">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Simulators</span>
+          <span>/</span>
+          <span>Attention</span>
+        </div>
+        <h1 class="page-title">Attention Mechanism Visualizer</h1>
+        <p class="page-subtitle">Interactive exploration of attention patterns and gating effects.</p>
+      </div>
+      <div class="simulator-container">
+        <div class="simulator-header">
+          <h3 class="simulator-title">Attention Matrix</h3>
+          <div class="simulator-controls">
+            <button class="btn btn-secondary" onclick="AttentionSim.randomize()">Randomize</button>
+          </div>
+        </div>
+        <div class="simulator-body">
+          <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-sm);">INPUT TOKENS</div>
+              <div id="attn-tokens" style="display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-md);"></div>
+
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-sm);">ATTENTION MATRIX</div>
+              <canvas id="attn-canvas" width="320" height="320" style="background: var(--bg-surface); border-radius: var(--radius-md); display: block;"></canvas>
+
+              <div style="display: flex; justify-content: space-between; margin-top: var(--space-sm); font-size: 0.75rem; color: var(--text-dim);">
+                <span>Low attention</span>
+                <div style="width: 100px; height: 12px; background: linear-gradient(90deg, #1e1b4b, #4f46e5, #c7d2fe); border-radius: 2px;"></div>
+                <span>High attention</span>
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 250px;">
+              <div class="simulator-panel" style="flex-direction: column;">
+                <div class="simulator-param">
+                  <label>Mode</label>
+                  <div style="display: flex; gap: var(--space-sm);">
+                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                      <input type="radio" name="attn-mode" value="standard" checked onchange="AttentionSim.setMode('standard')">
+                      <span style="font-size: 0.85rem;">Standard</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                      <input type="radio" name="attn-mode" value="gated" onchange="AttentionSim.setMode('gated')">
+                      <span style="font-size: 0.85rem;">Gated</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="simulator-param">
+                  <label>Gate Value: <span id="attn-gate-value" class="simulator-param-value">0.50</span></label>
+                  <input type="range" id="attn-gate" min="0" max="100" value="50" oninput="AttentionSim.updateGate(this.value)">
+                </div>
+
+                <div class="simulator-param">
+                  <label>Attention Sink Strength: <span id="attn-sink-value" class="simulator-param-value">0.70</span></label>
+                  <input type="range" id="attn-sink" min="0" max="100" value="70" oninput="AttentionSim.updateSink(this.value)">
+                </div>
+              </div>
+
+              <div class="card" style="margin-top: var(--space-md);">
+                <h4 style="margin: 0 0 var(--space-sm) 0; font-size: 0.9rem;">Current Head Stats</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); font-size: 0.85rem;">
+                  <div>
+                    <div style="color: var(--text-dim);">Entropy</div>
+                    <div id="attn-entropy" style="color: var(--accent); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Sink Ratio</div>
+                    <div id="attn-sink-ratio" style="color: var(--accent-5); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Sparsity</div>
+                    <div id="attn-sparsity" style="color: var(--accent-3); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Effective Tokens</div>
+                    <div id="attn-effective" style="color: var(--accent-2); font-weight: 600;">--</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="attn-insight" class="info-box" style="margin-top: var(--space-md); font-size: 0.85rem;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-sim-rl">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Simulators</span>
+          <span>/</span>
+          <span>RL Agent</span>
+        </div>
+        <h1 class="page-title">Goal-Reaching RL Agent</h1>
+        <p class="page-subtitle">Watch an agent learn with different network depths.</p>
+      </div>
+      <div class="simulator-container">
+        <div class="simulator-header">
+          <h3 class="simulator-title">Environment</h3>
+          <div class="simulator-controls">
+            <button class="btn btn-primary" id="rl-play" onclick="RLSim.togglePlay()">Play</button>
+            <button class="btn btn-secondary" onclick="RLSim.step()">Step</button>
+            <button class="btn btn-secondary" onclick="RLSim.reset()">Reset</button>
+          </div>
+        </div>
+        <div class="simulator-body">
+          <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+              <canvas id="rl-canvas" width="400" height="400" style="background: var(--bg-surface); border-radius: var(--radius-md); display: block; width: 100%; max-width: 400px;"></canvas>
+
+              <div style="display: flex; gap: var(--space-md); margin-top: var(--space-md);">
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-dim);">Agent</div>
+                  <div style="width: 24px; height: 24px; background: var(--accent); border-radius: 50%; margin: 4px auto;"></div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-dim);">Goal</div>
+                  <div style="width: 24px; height: 24px; background: var(--accent-3); border-radius: 50%; margin: 4px auto;"></div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-dim);">Wall</div>
+                  <div style="width: 24px; height: 24px; background: #374151; border-radius: 4px; margin: 4px auto;"></div>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-dim);">Path</div>
+                  <div style="width: 24px; height: 24px; background: rgba(79, 70, 229, 0.3); border-radius: 4px; margin: 4px auto;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 250px;">
+              <div class="simulator-panel" style="flex-direction: column;">
+                <div class="simulator-param">
+                  <label>Network Depth</label>
+                  <div style="display: flex; gap: var(--space-xs);">
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setDepth(4)" id="rl-depth-4">4</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setDepth(16)" id="rl-depth-16">16</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setDepth(64)" id="rl-depth-64">64</button>
+                    <button class="btn btn-secondary active" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setDepth(256)" id="rl-depth-256">256</button>
+                  </div>
+                </div>
+
+                <div class="simulator-param">
+                  <label>Speed: <span id="rl-speed-value" class="simulator-param-value">5</span></label>
+                  <input type="range" id="rl-speed" min="1" max="10" value="5" oninput="RLSim.updateSpeed(this.value)">
+                </div>
+
+                <div class="simulator-param">
+                  <label>Maze Complexity</label>
+                  <div style="display: flex; gap: var(--space-xs);">
+                    <button class="btn btn-secondary active" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setMaze('simple')" id="rl-maze-simple">Simple</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setMaze('medium')" id="rl-maze-medium">Medium</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="RLSim.setMaze('hard')" id="rl-maze-hard">Hard</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top: var(--space-md);">
+                <h4 style="margin: 0 0 var(--space-sm) 0; font-size: 0.9rem;">Performance Stats</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); font-size: 0.85rem;">
+                  <div>
+                    <div style="color: var(--text-dim);">Episodes</div>
+                    <div id="rl-episodes" style="color: var(--accent); font-weight: 600;">0</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Success Rate</div>
+                    <div id="rl-success" style="color: var(--accent-3); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Avg Steps</div>
+                    <div id="rl-steps" style="color: var(--accent-2); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Current Step</div>
+                    <div id="rl-current" style="color: var(--accent-4); font-weight: 600;">0</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="rl-insight" class="info-box" style="margin-top: var(--space-md); font-size: 0.85rem;">
+                <strong>Depth Effect:</strong> Deeper networks (256+ layers) can plan longer paths and find more efficient routes. Try switching depths to see the difference!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-sim-diffusion">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Simulators</span>
+          <span>/</span>
+          <span>Diffusion</span>
+        </div>
+        <h1 class="page-title">Diffusion Process Visualizer</h1>
+        <p class="page-subtitle">Explore forward and reverse diffusion with the generalization window.</p>
+      </div>
+      <div class="simulator-container">
+        <div class="simulator-header">
+          <h3 class="simulator-title">Noise Process</h3>
+          <div class="simulator-controls">
+            <button class="btn btn-primary" id="diff-play" onclick="DiffusionSim.togglePlay()">Play</button>
+            <button class="btn btn-secondary" onclick="DiffusionSim.reset()">Reset</button>
+          </div>
+        </div>
+        <div class="simulator-body">
+          <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; align-items: flex-start;">
+            <div style="flex: 1; min-width: 300px;">
+              <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-md);">
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: var(--space-xs);">ORIGINAL</div>
+                  <canvas id="diff-original" width="120" height="120" style="background: var(--bg-surface); border-radius: var(--radius-sm);"></canvas>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: var(--space-xs);">CURRENT (t=<span id="diff-step">0</span>)</div>
+                  <canvas id="diff-current" width="120" height="120" style="background: var(--bg-surface); border-radius: var(--radius-sm);"></canvas>
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: var(--space-xs);">PURE NOISE</div>
+                  <canvas id="diff-noise" width="120" height="120" style="background: var(--bg-surface); border-radius: var(--radius-sm);"></canvas>
+                </div>
+              </div>
+
+              <div style="margin-bottom: var(--space-md);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: var(--space-xs);">DIFFUSION TIMELINE</div>
+                <div style="position: relative; height: 60px; background: var(--bg-surface); border-radius: var(--radius-sm); overflow: hidden;">
+                  <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.1)); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.7rem; color: var(--accent-3);">Learning</span>
+                  </div>
+                  <div style="position: absolute; left: 40%; top: 0; bottom: 0; width: 35%; background: linear-gradient(90deg, rgba(79, 70, 229, 0.3), rgba(79, 70, 229, 0.1)); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.7rem; color: var(--accent);">Generalization Window</span>
+                  </div>
+                  <div style="position: absolute; left: 75%; top: 0; bottom: 0; width: 25%; background: linear-gradient(90deg, rgba(236, 72, 153, 0.3), rgba(236, 72, 153, 0.1)); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.7rem; color: var(--accent-5);">Memorization</span>
+                  </div>
+                  <div id="diff-marker" style="position: absolute; top: 0; bottom: 0; width: 3px; background: white; left: 0%; transition: left 0.1s;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 250px;">
+              <div class="simulator-panel" style="flex-direction: column;">
+                <div class="simulator-param">
+                  <label>Direction</label>
+                  <div style="display: flex; gap: var(--space-sm);">
+                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                      <input type="radio" name="diff-dir" value="forward" checked onchange="DiffusionSim.setDirection('forward')">
+                      <span style="font-size: 0.85rem;">Forward (add noise)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                      <input type="radio" name="diff-dir" value="reverse" onchange="DiffusionSim.setDirection('reverse')">
+                      <span style="font-size: 0.85rem;">Reverse (denoise)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="simulator-param">
+                  <label>Timestep: <span id="diff-t-value" class="simulator-param-value">0</span>/50</label>
+                  <input type="range" id="diff-t" min="0" max="50" value="0" oninput="DiffusionSim.setStep(this.value)">
+                </div>
+
+                <div class="simulator-param">
+                  <label>Speed</label>
+                  <input type="range" id="diff-speed" min="1" max="10" value="5">
+                </div>
+
+                <div class="simulator-param">
+                  <label>Shape</label>
+                  <div style="display: flex; gap: var(--space-xs);">
+                    <button class="btn btn-secondary active" style="flex: 1; font-size: 0.8rem;" onclick="DiffusionSim.setShape('circle')" id="diff-circle">Circle</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="DiffusionSim.setShape('square')" id="diff-square">Square</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="DiffusionSim.setShape('star')" id="diff-star">Star</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top: var(--space-md);">
+                <h4 style="margin: 0 0 var(--space-sm) 0; font-size: 0.9rem;">Process Stats</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); font-size: 0.85rem;">
+                  <div>
+                    <div style="color: var(--text-dim);">Noise Level</div>
+                    <div id="diff-noise-level" style="color: var(--accent); font-weight: 600;">0%</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Signal Preserved</div>
+                    <div id="diff-signal" style="color: var(--accent-3); font-weight: 600;">100%</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="diff-insight" class="info-box" style="margin-top: var(--space-md); font-size: 0.85rem;">
+                <strong>Try it:</strong> In the generalization window (middle zone), the model has learned the distribution but hasn't memorized specific examples.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-sim-superposition">
+      <div class="page-header">
+        <div class="page-breadcrumb">
+          <a href="#home" onclick="navigate('home')">Home</a>
+          <span>/</span>
+          <span>Simulators</span>
+          <span>/</span>
+          <span>Superposition</span>
+        </div>
+        <h1 class="page-title">Feature Superposition Demo</h1>
+        <p class="page-subtitle">Visualize how features interfere in low-dimensional spaces.</p>
+      </div>
+      <div class="simulator-container">
+        <div class="simulator-header">
+          <h3 class="simulator-title">Feature Space</h3>
+          <div class="simulator-controls">
+            <button class="btn btn-secondary" onclick="SuperSim.randomize()">Randomize</button>
+          </div>
+        </div>
+        <div class="simulator-body">
+          <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-sm);">2D FEATURE EMBEDDING SPACE</div>
+              <canvas id="super-canvas" width="400" height="400" style="background: var(--bg-surface); border-radius: var(--radius-md); display: block; width: 100%; max-width: 400px;"></canvas>
+
+              <div style="display: flex; gap: var(--space-md); margin-top: var(--space-md); font-size: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--accent);"></div>
+                  <span style="color: var(--text-dim);">Feature vectors</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <div style="width: 12px; height: 2px; background: rgba(255,255,255,0.3);"></div>
+                  <span style="color: var(--text-dim);">Interference</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 250px;">
+              <div class="simulator-panel" style="flex-direction: column;">
+                <div class="simulator-param">
+                  <label>Number of Features (N): <span id="super-n-value" class="simulator-param-value">8</span></label>
+                  <input type="range" id="super-n" min="2" max="20" value="8" oninput="SuperSim.setFeatures(this.value)">
+                </div>
+
+                <div class="simulator-param">
+                  <label>Dimensions (d): <span id="super-d-value" class="simulator-param-value">2</span></label>
+                  <div style="display: flex; gap: var(--space-xs);">
+                    <button class="btn btn-secondary active" style="flex: 1; font-size: 0.8rem;" onclick="SuperSim.setDimensions(2)" id="super-d-2">2</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="SuperSim.setDimensions(4)" id="super-d-4">4</button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem;" onclick="SuperSim.setDimensions(8)" id="super-d-8">8</button>
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                    (Higher d shown as 2D projection)
+                  </div>
+                </div>
+
+                <div class="simulator-param">
+                  <label>Feature Sparsity: <span id="super-sparse-value" class="simulator-param-value">0.3</span></label>
+                  <input type="range" id="super-sparse" min="10" max="90" value="30" oninput="SuperSim.setSparsity(this.value)">
+                </div>
+              </div>
+
+              <div class="card" style="margin-top: var(--space-md);">
+                <h4 style="margin: 0 0 var(--space-sm) 0; font-size: 0.9rem;">Superposition Metrics</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); font-size: 0.85rem;">
+                  <div>
+                    <div style="color: var(--text-dim);">N/d Ratio</div>
+                    <div id="super-ratio" style="color: var(--accent); font-weight: 600;">4.0</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Avg Interference</div>
+                    <div id="super-interference" style="color: var(--accent-5); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Reconstruction Loss</div>
+                    <div id="super-loss" style="color: var(--accent-2); font-weight: 600;">--</div>
+                  </div>
+                  <div>
+                    <div style="color: var(--text-dim);">Predicted Scaling</div>
+                    <div id="super-scaling" style="color: var(--accent-3); font-weight: 600;">--</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="super-insight" class="info-box" style="margin-top: var(--space-md); font-size: 0.85rem;">
+                <strong>Scaling Law:</strong> As d increases, interference decreases proportionally to 1/d, explaining why larger models generalize better.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+  <footer class="footer" role="contentinfo">
+    <p>
+      Based on <a href="2025_winners.html">NeurIPS 2025 Best Paper Awards Dashboard</a>
+    </p>
+    <p style="margin-top: var(--space-sm);">
+      Educational resource for ML research exploration &bull;
+      <a href="#home" onclick="navigate('home')">Back to Home</a>
+    </p>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       JAVASCRIPT - SPA ROUTING & CORE FUNCTIONALITY
+       ═══════════════════════════════════════════════════════════════ -->
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // SPA NAVIGATION
+    // ═══════════════════════════════════════════════════════════════
+
+    const pages = document.querySelectorAll('.page');
+    const navLinks = document.querySelectorAll('.nav-link[data-nav]');
+
+    function navigate(pageId) {
+      // Hide all pages
+      pages.forEach(page => page.classList.remove('active'));
+
+      // Show target page
+      const targetPage = document.getElementById(`page-${pageId}`);
+      if (targetPage) {
+        targetPage.classList.add('active');
+      }
+
+      // Update nav active state
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.nav === pageId);
+      });
+
+      // Update URL hash
+      history.pushState(null, '', `#${pageId}`);
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Close mobile menu if open
+      document.getElementById('navLinks').classList.remove('open');
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+      const hash = window.location.hash.slice(1) || 'home';
+      navigate(hash);
+    });
+
+    // Handle initial hash
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.slice(1) || 'home';
+      navigate(hash);
+    });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      document.getElementById('navLinks').classList.toggle('open');
+    }
+
+    // Keyboard navigation for dropdowns and topic cards
+    document.addEventListener('keydown', (e) => {
+      // Escape closes mobile menu
+      if (e.key === 'Escape') {
+        document.getElementById('navLinks').classList.remove('open');
+      }
+
+      // Enter/Space on topic cards
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('topic-card')) {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
+
+    // Make topic cards focusable
+    document.querySelectorAll('.topic-card').forEach(card => {
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS (for simulators in Chunk 3)
+    // ═══════════════════════════════════════════════════════════════
+
+    const Utils = {
+      // Clamp value between min and max
+      clamp: (val, min, max) => Math.min(Math.max(val, min), max),
+
+      // Linear interpolation
+      lerp: (a, b, t) => a + (b - a) * t,
+
+      // Map value from one range to another
+      map: (val, inMin, inMax, outMin, outMax) => {
+        return outMin + (outMax - outMin) * ((val - inMin) / (inMax - inMin));
+      },
+
+      // Generate random color with optional alpha
+      randomColor: (alpha = 1) => {
+        const h = Math.random() * 360;
+        const s = 60 + Math.random() * 20;
+        const l = 50 + Math.random() * 15;
+        return `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
+      },
+
+      // 2D distance
+      distance: (x1, y1, x2, y2) => {
+        return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      },
+
+      // Ease functions
+      easeInOut: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+      easeOut: (t) => 1 - Math.pow(1 - t, 3),
+
+      // Debounce function
+      debounce: (fn, delay) => {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn(...args), delay);
+        };
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // CANVAS UTILITIES (for simulators in Chunk 3)
+    // ═══════════════════════════════════════════════════════════════
+
+    const CanvasUtils = {
+      // Create and configure a canvas
+      createCanvas: (container, width, height) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.className = 'simulator-canvas';
+        container.appendChild(canvas);
+        return canvas;
+      },
+
+      // Get device pixel ratio aware context
+      getContext: (canvas) => {
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        return ctx;
+      },
+
+      // Clear canvas with background
+      clear: (ctx, canvas, color = '#0b1229') => {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      },
+
+      // Draw grid
+      drawGrid: (ctx, width, height, spacing = 20, color = 'rgba(148, 163, 184, 0.1)') => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= width; x += spacing) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= height; y += spacing) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+      }
+    };
+
+    // Expose globally for simulator modules
+    window.Utils = Utils;
+    window.CanvasUtils = CanvasUtils;
+    window.navigate = navigate;
+
+    // ═══════════════════════════════════════════════════════════════
+    // SIMULATOR 1: DIVERSITY ANALYZER
+    // ═══════════════════════════════════════════════════════════════
+
+    const DiversitySim = {
+      reset() {
+        for (let i = 1; i <= 4; i++) {
+          document.getElementById(`div-text${i}`).value = '';
+        }
+        document.getElementById('div-results').style.display = 'none';
+      },
+
+      loadExample() {
+        const examples = [
+          "Artificial intelligence has transformed many aspects of our daily lives. From voice assistants to recommendation systems, AI is everywhere. Machine learning algorithms power these innovations.",
+          "AI has transformed many aspects of daily life. Voice assistants and recommendation systems are powered by AI everywhere. Machine learning algorithms drive these innovations.",
+          "Artificial intelligence has changed how we live our daily lives. From voice assistants to recommendations, AI is all around us. ML algorithms are behind these innovations.",
+          "AI is transforming our daily lives in many ways. Voice assistants and recommendation engines use AI extensively. Machine learning powers these technological innovations."
+        ];
+        for (let i = 1; i <= 4; i++) {
+          document.getElementById(`div-text${i}`).value = examples[i-1];
+        }
+      },
+
+      analyze() {
+        const texts = [];
+        for (let i = 1; i <= 4; i++) {
+          const text = document.getElementById(`div-text${i}`).value.trim();
+          if (text) texts.push(text);
+        }
+
+        if (texts.length < 2) {
+          alert('Please enter at least 2 text samples to compare.');
+          return;
+        }
+
+        // Calculate metrics
+        const tokenSets = texts.map(t => new Set(t.toLowerCase().split(/\s+/).filter(w => w.length > 2)));
+        const allTokens = texts.flatMap(t => t.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+
+        // TTR
+        const uniqueTokens = new Set(allTokens);
+        const ttr = (uniqueTokens.size / allTokens.length).toFixed(3);
+
+        // Jaccard similarity
+        let jaccardSum = 0;
+        let pairs = 0;
+        for (let i = 0; i < tokenSets.length; i++) {
+          for (let j = i + 1; j < tokenSets.length; j++) {
+            const intersection = new Set([...tokenSets[i]].filter(x => tokenSets[j].has(x)));
+            const union = new Set([...tokenSets[i], ...tokenSets[j]]);
+            jaccardSum += intersection.size / union.size;
+            pairs++;
+          }
+        }
+        const avgJaccard = (jaccardSum / pairs).toFixed(3);
+
+        // N-grams
+        const getNgrams = (text, n) => {
+          const words = text.toLowerCase().split(/\s+/);
+          const ngrams = [];
+          for (let i = 0; i <= words.length - n; i++) {
+            ngrams.push(words.slice(i, i + n).join(' '));
+          }
+          return ngrams;
+        };
+        const allNgrams = new Set(texts.flatMap(t => getNgrams(t, 3)));
+        const ngramCount = allNgrams.size;
+
+        // Homogeneity (based on Jaccard)
+        const homogeneity = Math.round(avgJaccard * 100);
+
+        // Update UI
+        document.getElementById('div-ttr').textContent = ttr;
+        document.getElementById('div-jaccard').textContent = avgJaccard;
+        document.getElementById('div-ngrams').textContent = ngramCount;
+        document.getElementById('div-homogeneity').textContent = homogeneity + '%';
+        document.getElementById('div-results').style.display = 'block';
+
+        // Interpretation
+        let interpretation = '';
+        if (homogeneity > 70) {
+          interpretation = '<strong>High Homogeneity Detected!</strong> These responses show significant overlap, suggesting potential "hivemind" behavior where different samples converge on similar phrasing and ideas.';
+        } else if (homogeneity > 40) {
+          interpretation = '<strong>Moderate Similarity.</strong> The responses share common themes but express them differently. This is typical of responses to similar prompts.';
+        } else {
+          interpretation = '<strong>Good Diversity!</strong> The responses show healthy variation in vocabulary and phrasing, suggesting diverse perspectives or approaches.';
+        }
+        document.getElementById('div-interpretation').innerHTML = interpretation;
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // SIMULATOR 2: ATTENTION VISUALIZER
+    // ═══════════════════════════════════════════════════════════════
+
+    const AttentionSim = {
+      tokens: ['[BOS]', 'The', 'quick', 'brown', 'fox', 'jumps', 'over', 'the'],
+      mode: 'standard',
+      gateValue: 0.5,
+      sinkStrength: 0.7,
+      attentionMatrix: [],
+
+      init() {
+        this.generateAttention();
+        this.renderTokens();
+        this.render();
+      },
+
+      renderTokens() {
+        const container = document.getElementById('attn-tokens');
+        if (!container) return;
+        container.innerHTML = this.tokens.map((t, i) =>
+          `<span style="padding: 4px 8px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 4px; font-size: 0.8rem; font-family: var(--font-mono);">${t}</span>`
+        ).join('');
+      },
+
+      generateAttention() {
+        const n = this.tokens.length;
+        this.attentionMatrix = [];
+
+        for (let i = 0; i < n; i++) {
+          const row = [];
+          for (let j = 0; j < n; j++) {
+            if (j > i) {
+              row.push(0); // Causal mask
+            } else if (j === 0) {
+              row.push(this.sinkStrength * (0.5 + Math.random() * 0.5)); // Sink
+            } else {
+              row.push(Math.random() * (1 - this.sinkStrength));
+            }
+          }
+          // Normalize row
+          const sum = row.reduce((a, b) => a + b, 0);
+          for (let j = 0; j < n; j++) row[j] = sum > 0 ? row[j] / sum : 0;
+          this.attentionMatrix.push(row);
+        }
+      },
+
+      render() {
+        const canvas = document.getElementById('attn-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const n = this.tokens.length;
+        const cellSize = canvas.width / n;
+
+        ctx.fillStyle = '#0b1229';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Apply gating if in gated mode
+        const effectiveGate = this.mode === 'gated' ? this.gateValue : 1;
+
+        let entropy = 0;
+        let sinkTotal = 0;
+        let sparse = 0;
+
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            let val = this.attentionMatrix[i][j] * effectiveGate;
+
+            // Color interpolation
+            const r = Math.round(30 + val * 169);
+            const g = Math.round(27 + val * 140);
+            const b = Math.round(75 + val * 180);
+
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillRect(j * cellSize + 1, i * cellSize + 1, cellSize - 2, cellSize - 2);
+
+            // Stats
+            if (val > 0) {
+              entropy -= val * Math.log2(val + 0.0001);
+              if (j === 0) sinkTotal += val;
+              if (val < 0.1) sparse++;
+            }
+          }
+        }
+
+        // Update stats
+        document.getElementById('attn-entropy').textContent = (entropy / n).toFixed(2);
+        document.getElementById('attn-sink-ratio').textContent = ((sinkTotal / n) * 100).toFixed(0) + '%';
+        document.getElementById('attn-sparsity').textContent = ((sparse / (n * n)) * 100).toFixed(0) + '%';
+        document.getElementById('attn-effective').textContent = (n * effectiveGate).toFixed(1);
+
+        // Insight
+        const insight = this.mode === 'gated' && this.gateValue < 0.3
+          ? '<strong>Gating Effect:</strong> With low gate value, the attention head suppresses itself, eliminating the sink problem!'
+          : this.sinkStrength > 0.6
+          ? '<strong>Attention Sink:</strong> Notice how much attention goes to the first token (BOS), wasting capacity.'
+          : '<strong>Balanced Attention:</strong> Attention is distributed more evenly across relevant tokens.';
+        document.getElementById('attn-insight').innerHTML = insight;
+      },
+
+      setMode(mode) {
+        this.mode = mode;
+        this.render();
+      },
+
+      updateGate(val) {
+        this.gateValue = val / 100;
+        document.getElementById('attn-gate-value').textContent = this.gateValue.toFixed(2);
+        this.render();
+      },
+
+      updateSink(val) {
+        this.sinkStrength = val / 100;
+        document.getElementById('attn-sink-value').textContent = this.sinkStrength.toFixed(2);
+        this.generateAttention();
+        this.render();
+      },
+
+      randomize() {
+        this.generateAttention();
+        this.render();
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // SIMULATOR 3: RL GOAL-REACHING AGENT
+    // ═══════════════════════════════════════════════════════════════
+
+    const RLSim = {
+      gridSize: 10,
+      agent: { x: 1, y: 1 },
+      goal: { x: 8, y: 8 },
+      walls: [],
+      path: [],
+      depth: 256,
+      speed: 5,
+      maze: 'simple',
+      playing: false,
+      episodes: 0,
+      successes: 0,
+      totalSteps: 0,
+      currentStep: 0,
+      animationId: null,
+
+      init() {
+        this.generateMaze();
+        this.render();
+      },
+
+      generateMaze() {
+        this.walls = [];
+        const wallDensity = this.maze === 'simple' ? 0.1 : this.maze === 'medium' ? 0.2 : 0.3;
+
+        for (let x = 0; x < this.gridSize; x++) {
+          for (let y = 0; y < this.gridSize; y++) {
+            if ((x === this.agent.x && y === this.agent.y) || (x === this.goal.x && y === this.goal.y)) continue;
+            if (Math.random() < wallDensity) {
+              this.walls.push({ x, y });
+            }
+          }
+        }
+        this.path = [];
+        this.currentStep = 0;
+      },
+
+      isWall(x, y) {
+        return this.walls.some(w => w.x === x && w.y === y);
+      },
+
+      render() {
+        const canvas = document.getElementById('rl-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const cellSize = canvas.width / this.gridSize;
+
+        // Clear
+        ctx.fillStyle = '#0b1229';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+        for (let i = 0; i <= this.gridSize; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * cellSize, 0);
+          ctx.lineTo(i * cellSize, canvas.height);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, i * cellSize);
+          ctx.lineTo(canvas.width, i * cellSize);
+          ctx.stroke();
+        }
+
+        // Path
+        ctx.fillStyle = 'rgba(79, 70, 229, 0.3)';
+        this.path.forEach(p => {
+          ctx.fillRect(p.x * cellSize + 2, p.y * cellSize + 2, cellSize - 4, cellSize - 4);
+        });
+
+        // Walls
+        ctx.fillStyle = '#374151';
+        this.walls.forEach(w => {
+          ctx.fillRect(w.x * cellSize + 2, w.y * cellSize + 2, cellSize - 4, cellSize - 4);
+        });
+
+        // Goal
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc((this.goal.x + 0.5) * cellSize, (this.goal.y + 0.5) * cellSize, cellSize * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Agent
+        ctx.fillStyle = '#4f46e5';
+        ctx.beginPath();
+        ctx.arc((this.agent.x + 0.5) * cellSize, (this.agent.y + 0.5) * cellSize, cellSize * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stats
+        document.getElementById('rl-current').textContent = this.currentStep;
+      },
+
+      findPath() {
+        // A* pathfinding with depth-dependent efficiency
+        const start = { ...this.agent };
+        const end = { ...this.goal };
+
+        const openSet = [start];
+        const cameFrom = new Map();
+        const gScore = new Map();
+        const fScore = new Map();
+
+        const key = (p) => `${p.x},${p.y}`;
+        gScore.set(key(start), 0);
+        fScore.set(key(start), this.heuristic(start, end));
+
+        // Depth affects how optimal the path is
+        const explorationNoise = Math.max(0.01, 1 - this.depth / 300);
+
+        while (openSet.length > 0) {
+          openSet.sort((a, b) => (fScore.get(key(a)) || Infinity) - (fScore.get(key(b)) || Infinity));
+          const current = openSet.shift();
+
+          if (current.x === end.x && current.y === end.y) {
+            // Reconstruct path
+            const path = [current];
+            let curr = current;
+            while (cameFrom.has(key(curr))) {
+              curr = cameFrom.get(key(curr));
+              path.unshift(curr);
+            }
+            return path;
+          }
+
+          const neighbors = [
+            { x: current.x + 1, y: current.y },
+            { x: current.x - 1, y: current.y },
+            { x: current.x, y: current.y + 1 },
+            { x: current.x, y: current.y - 1 }
+          ].filter(n =>
+            n.x >= 0 && n.x < this.gridSize &&
+            n.y >= 0 && n.y < this.gridSize &&
+            !this.isWall(n.x, n.y)
+          );
+
+          for (const neighbor of neighbors) {
+            const tentativeG = (gScore.get(key(current)) || 0) + 1 + Math.random() * explorationNoise;
+
+            if (tentativeG < (gScore.get(key(neighbor)) || Infinity)) {
+              cameFrom.set(key(neighbor), current);
+              gScore.set(key(neighbor), tentativeG);
+              fScore.set(key(neighbor), tentativeG + this.heuristic(neighbor, end));
+
+              if (!openSet.some(n => n.x === neighbor.x && n.y === neighbor.y)) {
+                openSet.push(neighbor);
+              }
+            }
+          }
+        }
+
+        return null; // No path found
+      },
+
+      heuristic(a, b) {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+      },
+
+      step() {
+        if (this.path.length === 0) {
+          this.path = this.findPath() || [];
+          if (this.path.length === 0) {
+            this.reset();
+            return;
+          }
+        }
+
+        if (this.currentStep < this.path.length - 1) {
+          this.currentStep++;
+          this.agent = { ...this.path[this.currentStep] };
+          this.render();
+        }
+
+        if (this.agent.x === this.goal.x && this.agent.y === this.goal.y) {
+          this.episodes++;
+          this.successes++;
+          this.totalSteps += this.currentStep;
+          this.updateStats();
+          setTimeout(() => this.reset(), 500);
+        }
+      },
+
+      updateStats() {
+        document.getElementById('rl-episodes').textContent = this.episodes;
+        document.getElementById('rl-success').textContent = this.episodes > 0
+          ? Math.round((this.successes / this.episodes) * 100) + '%'
+          : '--';
+        document.getElementById('rl-steps').textContent = this.successes > 0
+          ? (this.totalSteps / this.successes).toFixed(1)
+          : '--';
+      },
+
+      togglePlay() {
+        this.playing = !this.playing;
+        document.getElementById('rl-play').textContent = this.playing ? 'Pause' : 'Play';
+
+        if (this.playing) {
+          this.runLoop();
+        } else {
+          cancelAnimationFrame(this.animationId);
+        }
+      },
+
+      runLoop() {
+        if (!this.playing) return;
+
+        this.step();
+
+        const delay = Math.max(50, 500 - this.speed * 45);
+        setTimeout(() => {
+          this.animationId = requestAnimationFrame(() => this.runLoop());
+        }, delay);
+      },
+
+      reset() {
+        this.agent = { x: 1, y: 1 };
+        this.path = [];
+        this.currentStep = 0;
+        this.render();
+      },
+
+      setDepth(d) {
+        this.depth = d;
+        document.querySelectorAll('[id^="rl-depth-"]').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`rl-depth-${d}`).classList.add('active');
+        this.reset();
+
+        const insight = d >= 256
+          ? '<strong>Deep Network:</strong> 256+ layers enable long-horizon planning and optimal pathfinding!'
+          : d >= 64
+          ? '<strong>Medium Depth:</strong> Can handle moderate complexity but may miss optimal paths.'
+          : '<strong>Shallow Network:</strong> Limited planning horizon, often takes suboptimal routes.';
+        document.getElementById('rl-insight').innerHTML = insight;
+      },
+
+      setMaze(type) {
+        this.maze = type;
+        document.querySelectorAll('[id^="rl-maze-"]').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`rl-maze-${type}`).classList.add('active');
+        this.generateMaze();
+        this.render();
+      },
+
+      updateSpeed(val) {
+        this.speed = parseInt(val);
+        document.getElementById('rl-speed-value').textContent = this.speed;
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // SIMULATOR 4: DIFFUSION PROCESS
+    // ═══════════════════════════════════════════════════════════════
+
+    const DiffusionSim = {
+      step: 0,
+      maxSteps: 50,
+      direction: 'forward',
+      shape: 'circle',
+      playing: false,
+      originalData: null,
+      noiseData: null,
+      animationId: null,
+
+      init() {
+        this.generateShapes();
+        this.render();
+      },
+
+      generateShapes() {
+        const size = 120;
+        this.originalData = new ImageData(size, size);
+        this.noiseData = new ImageData(size, size);
+
+        const center = size / 2;
+        const radius = size * 0.35;
+
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const idx = (y * size + x) * 4;
+            const dx = x - center;
+            const dy = y - center;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            let inside = false;
+            if (this.shape === 'circle') {
+              inside = dist < radius;
+            } else if (this.shape === 'square') {
+              inside = Math.abs(dx) < radius && Math.abs(dy) < radius;
+            } else if (this.shape === 'star') {
+              const angle = Math.atan2(dy, dx);
+              const r = radius * (0.5 + 0.5 * Math.cos(5 * angle));
+              inside = dist < r;
+            }
+
+            if (inside) {
+              this.originalData.data[idx] = 79;     // R
+              this.originalData.data[idx + 1] = 70;  // G
+              this.originalData.data[idx + 2] = 229; // B
+              this.originalData.data[idx + 3] = 255; // A
+            } else {
+              this.originalData.data[idx] = 11;
+              this.originalData.data[idx + 1] = 18;
+              this.originalData.data[idx + 2] = 41;
+              this.originalData.data[idx + 3] = 255;
+            }
+
+            // Pure noise
+            const noise = Math.random() * 255;
+            this.noiseData.data[idx] = noise * 0.3 + 11;
+            this.noiseData.data[idx + 1] = noise * 0.3 + 18;
+            this.noiseData.data[idx + 2] = noise * 0.5 + 41;
+            this.noiseData.data[idx + 3] = 255;
+          }
+        }
+
+        // Draw original
+        const origCanvas = document.getElementById('diff-original');
+        if (origCanvas) {
+          origCanvas.getContext('2d').putImageData(this.originalData, 0, 0);
+        }
+
+        // Draw noise
+        const noiseCanvas = document.getElementById('diff-noise');
+        if (noiseCanvas) {
+          noiseCanvas.getContext('2d').putImageData(this.noiseData, 0, 0);
+        }
+      },
+
+      render() {
+        const canvas = document.getElementById('diff-current');
+        if (!canvas || !this.originalData) return;
+        const ctx = canvas.getContext('2d');
+        const size = 120;
+
+        const t = this.step / this.maxSteps;
+        const currentData = new ImageData(size, size);
+
+        for (let i = 0; i < this.originalData.data.length; i += 4) {
+          for (let c = 0; c < 3; c++) {
+            currentData.data[i + c] = Math.round(
+              this.originalData.data[i + c] * (1 - t) +
+              this.noiseData.data[i + c] * t +
+              (Math.random() - 0.5) * 20 * t
+            );
+          }
+          currentData.data[i + 3] = 255;
+        }
+
+        ctx.putImageData(currentData, 0, 0);
+
+        // Update UI
+        document.getElementById('diff-step').textContent = this.step;
+        document.getElementById('diff-t-value').textContent = this.step;
+        document.getElementById('diff-t').value = this.step;
+        document.getElementById('diff-noise-level').textContent = Math.round(t * 100) + '%';
+        document.getElementById('diff-signal').textContent = Math.round((1 - t) * 100) + '%';
+        document.getElementById('diff-marker').style.left = (t * 100) + '%';
+      },
+
+      setStep(val) {
+        this.step = parseInt(val);
+        this.render();
+      },
+
+      setDirection(dir) {
+        this.direction = dir;
+      },
+
+      setShape(shape) {
+        this.shape = shape;
+        document.querySelectorAll('[id^="diff-"]').forEach(btn => {
+          if (btn.id.startsWith('diff-circle') || btn.id.startsWith('diff-square') || btn.id.startsWith('diff-star')) {
+            btn.classList.remove('active');
+          }
+        });
+        document.getElementById(`diff-${shape}`).classList.add('active');
+        this.generateShapes();
+        this.render();
+      },
+
+      togglePlay() {
+        this.playing = !this.playing;
+        document.getElementById('diff-play').textContent = this.playing ? 'Pause' : 'Play';
+
+        if (this.playing) {
+          this.runLoop();
+        }
+      },
+
+      runLoop() {
+        if (!this.playing) return;
+
+        if (this.direction === 'forward') {
+          this.step = Math.min(this.step + 1, this.maxSteps);
+          if (this.step >= this.maxSteps) {
+            this.playing = false;
+            document.getElementById('diff-play').textContent = 'Play';
+          }
+        } else {
+          this.step = Math.max(this.step - 1, 0);
+          if (this.step <= 0) {
+            this.playing = false;
+            document.getElementById('diff-play').textContent = 'Play';
+          }
+        }
+
+        this.render();
+
+        const speed = parseInt(document.getElementById('diff-speed').value);
+        setTimeout(() => {
+          if (this.playing) requestAnimationFrame(() => this.runLoop());
+        }, Math.max(50, 300 - speed * 25));
+      },
+
+      reset() {
+        this.step = this.direction === 'forward' ? 0 : this.maxSteps;
+        this.playing = false;
+        document.getElementById('diff-play').textContent = 'Play';
+        this.render();
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // SIMULATOR 5: FEATURE SUPERPOSITION
+    // ═══════════════════════════════════════════════════════════════
+
+    const SuperSim = {
+      numFeatures: 8,
+      dimensions: 2,
+      sparsity: 0.3,
+      features: [],
+
+      init() {
+        this.generateFeatures();
+        this.render();
+      },
+
+      generateFeatures() {
+        this.features = [];
+        for (let i = 0; i < this.numFeatures; i++) {
+          // Generate random unit vector in d dimensions
+          const vec = [];
+          let norm = 0;
+          for (let j = 0; j < this.dimensions; j++) {
+            const v = Math.random() * 2 - 1;
+            vec.push(v);
+            norm += v * v;
+          }
+          norm = Math.sqrt(norm);
+          this.features.push(vec.map(v => v / norm));
+        }
+      },
+
+      render() {
+        const canvas = document.getElementById('super-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const center = { x: width / 2, y: height / 2 };
+        const scale = Math.min(width, height) * 0.4;
+
+        // Clear
+        ctx.fillStyle = '#0b1229';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw axes
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, center.y);
+        ctx.lineTo(width, center.y);
+        ctx.moveTo(center.x, 0);
+        ctx.lineTo(center.x, height);
+        ctx.stroke();
+
+        // Draw unit circle
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, scale, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Calculate interference
+        let totalInterference = 0;
+        let pairs = 0;
+
+        // Draw interference lines
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < this.features.length; i++) {
+          for (let j = i + 1; j < this.features.length; j++) {
+            // Dot product (interference)
+            let dot = 0;
+            for (let k = 0; k < Math.min(2, this.dimensions); k++) {
+              dot += this.features[i][k] * this.features[j][k];
+            }
+            dot = Math.abs(dot);
+            totalInterference += dot;
+            pairs++;
+
+            if (dot > 0.3) {
+              const x1 = center.x + this.features[i][0] * scale;
+              const y1 = center.y - this.features[i][1] * scale;
+              const x2 = center.x + this.features[j][0] * scale;
+              const y2 = center.y - this.features[j][1] * scale;
+
+              ctx.globalAlpha = dot;
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.globalAlpha = 1;
+
+        // Draw feature vectors
+        const colors = ['#4f46e5', '#06b6d4', '#22c55e', '#eab308', '#ec4899', '#f97316', '#8b5cf6', '#ef4444'];
+        this.features.forEach((f, i) => {
+          const x = center.x + f[0] * scale;
+          const y = center.y - f[1] * scale;
+
+          // Line from origin
+          ctx.strokeStyle = colors[i % colors.length];
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(center.x, center.y);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+
+          // Point
+          ctx.fillStyle = colors[i % colors.length];
+          ctx.beginPath();
+          ctx.arc(x, y, 6, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Label
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px system-ui';
+          ctx.fillText(`f${i + 1}`, x + 8, y + 4);
+        });
+
+        // Update metrics
+        const avgInterference = pairs > 0 ? totalInterference / pairs : 0;
+        const ratio = this.numFeatures / this.dimensions;
+        const predictedLoss = ratio * avgInterference;
+
+        document.getElementById('super-ratio').textContent = ratio.toFixed(1);
+        document.getElementById('super-interference').textContent = (avgInterference * 100).toFixed(1) + '%';
+        document.getElementById('super-loss').textContent = predictedLoss.toFixed(3);
+        document.getElementById('super-scaling').textContent = `L ~ 1/d^${(0.5 + this.sparsity * 0.5).toFixed(2)}`;
+
+        // Update insight based on ratio
+        const insight = ratio > 3
+          ? '<strong>High Superposition:</strong> Many features packed into few dimensions causes significant interference!'
+          : ratio > 1.5
+          ? '<strong>Moderate Superposition:</strong> Some interference but features remain distinguishable.'
+          : '<strong>Low Superposition:</strong> Features can be nearly orthogonal with minimal interference.';
+        document.getElementById('super-insight').innerHTML = insight;
+      },
+
+      setFeatures(n) {
+        this.numFeatures = parseInt(n);
+        document.getElementById('super-n-value').textContent = this.numFeatures;
+        this.generateFeatures();
+        this.render();
+      },
+
+      setDimensions(d) {
+        this.dimensions = d;
+        document.getElementById('super-d-value').textContent = d;
+        document.querySelectorAll('[id^="super-d-"]').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`super-d-${d}`).classList.add('active');
+        this.generateFeatures();
+        this.render();
+      },
+
+      setSparsity(val) {
+        this.sparsity = val / 100;
+        document.getElementById('super-sparse-value').textContent = this.sparsity.toFixed(2);
+        this.render();
+      },
+
+      randomize() {
+        this.generateFeatures();
+        this.render();
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // INITIALIZE ALL SIMULATORS ON PAGE NAVIGATION
+    // ═══════════════════════════════════════════════════════════════
+
+    const originalNavigate = navigate;
+    window.navigate = function(pageId) {
+      originalNavigate(pageId);
+
+      // Initialize simulators when their pages are shown
+      setTimeout(() => {
+        if (pageId === 'sim-attention') AttentionSim.init();
+        if (pageId === 'sim-rl') RLSim.init();
+        if (pageId === 'sim-diffusion') DiffusionSim.init();
+        if (pageId === 'sim-superposition') SuperSim.init();
+      }, 100);
+    };
+
+    // Expose simulators globally
+    window.DiversitySim = DiversitySim;
+    window.AttentionSim = AttentionSim;
+    window.RLSim = RLSim;
+    window.DiffusionSim = DiffusionSim;
+    window.SuperSim = SuperSim;
+
+    // Log initialization
+    console.log('%cNeurIPS 2025 Explorer v1.0', 'color: #4f46e5; font-weight: bold; font-size: 14px;');
+    console.log('7 topic deep-dives | 5 interactive simulators');
+    console.log('Learn more: https://neurips.cc');
+  </script>
+</body>
+</html>
