@@ -1,1 +1,1 @@
-https://nstarx.github.io/IPS/
+https://nstarx.github.io/NeurIPS/
